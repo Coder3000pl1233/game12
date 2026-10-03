@@ -1,7 +1,4 @@
-import tomasNeutral from './characters/tomas/neutral.webp'
-import tomasUneasy from './characters/tomas/uneasy.webp'
-import tomasDefensive from './characters/tomas/defensive.webp'
-import tomasVulnerable from './characters/tomas/vulnerable.webp'
+import tomasPortrait from './characters/tomas/portrait-v2.webp'
 import consultationRoom from './environments/consultorio/desktop.webp'
 import consultationRoomMobile from './environments/consultorio/mobile.webp'
 import officeAmbienceOgg from './audio/ambience/consultorio.ogg'
@@ -18,11 +15,13 @@ import doorOgg from './audio/sfx/door.ogg'
 import doorMp3 from './audio/sfx/door.mp3'
 
 export const portraits = {
-  neutral: tomasNeutral,
-  uneasy: tomasUneasy,
-  defensive: tomasDefensive,
-  vulnerable: tomasVulnerable,
+  neutral: tomasPortrait,
+  uneasy: tomasPortrait,
+  defensive: tomasPortrait,
+  vulnerable: tomasPortrait,
 } as const
+
+export { tomasPortrait }
 
 export const consultationRoomBackground = consultationRoom
 export const consultationRoomMobileBackground = consultationRoomMobile
