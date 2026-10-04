@@ -28,6 +28,8 @@ export const actThreeScenes: Record<string, StoryScene> = {
       { id: 's11_listen_nico', text: 'Explorar qué significa para Tomás sentirse comprendido.', intention: 'deepen', effects: [{ type: 'changeStat', stat: 'perceived_support', amount: 5 }, { type: 'changeStat', stat: 'trust', amount: 3 }, { type: 'addClue', entry: { id: 's11_nico_familiarity', title: 'Nico conoce detalles de Bruno', text: 'Tomás dice que Nico usa una frase privada asociada con Bruno. Sugiere una cercanía previa, pero no confirma que sea el autor de los mensajes.', category: 'school-history', sessionId: 'S11' } }], nextSceneId: 's11_listen_reply' },
       { id: 's11_investigate_nico', text: 'Preguntar por Nico y sus vínculos con Bruno antes de escuchar más.', intention: 'confront', effects: [{ type: 'changeStat', stat: 'trust', amount: -8 }, { type: 'changeStat', stat: 'investigation_bias', amount: 10 }, { type: 'changeStat', stat: 'perceived_support', amount: -4 }, { type: 'addClue', entry: { id: 's11_nico_familiarity', title: 'Nico conoce detalles de Bruno', text: 'Tomás dice que Nico usa una frase privada asociada con Bruno. Sugiere una cercanía previa, pero no confirma que sea el autor de los mensajes.', category: 'school-history', sessionId: 'S11' } }], nextSceneId: 's11_investigate_reply', importantDecision: true },
       { id: 's11_mark_boundary', text: 'Preguntar qué no quiere que Julián haga con lo que cuente sobre Nico.', intention: 'limit', effects: [{ type: 'changeStat', stat: 'autonomy', amount: 5 }, { type: 'changeStat', stat: 'trust', amount: 2 }], nextSceneId: 's11_boundary_reply' },
+      { id: 's11_test_nico_hypothesis', text: 'Preguntar por la familiaridad de Nico sin afirmar que sea el autor.', intention: 'question', conditions: [{ type: 'hypothesisActive', hypothesisId: 'nico_involvement' }], effects: [{ type: 'changeStat', stat: 'investigation_bias', amount: 3 }], nextSceneId: 's11_investigate_reply' },
+      { id: 's11_put_support_first', text: 'Dejar el origen de los mensajes en segundo plano y explorar qué apoyo encuentra en Nico.', intention: 'validate', conditions: [{ type: 'hypothesisActive', hypothesisId: 'support_before_case' }], effects: [{ type: 'changeStat', stat: 'perceived_support', amount: 4 }, { type: 'changeStat', stat: 'trust', amount: 2 }], nextSceneId: 's11_listen_reply' },
     ],
   },
   s11_listen_reply: {
@@ -260,6 +262,8 @@ export const actThreeScenes: Record<string, StoryScene> = {
   s16_open: {
     id: 's16_open', sessionId: 'S16', kind: 'dialogue', label: '“Desaparecer / hacerlos pagar”', portraitState: 'vulnerable',
     lines: [
+      { speaker: 'Tomás', text: 'Al principio dijiste que si ibas a hablar con alguien me explicarías qué y por qué. Necesito que eso siga valiendo.', conditions: [{ type: 'flagIs', flag: 's01_notice_promise', value: true }] },
+      { speaker: 'Tomás', text: 'Una vez reconociste que habías hablado por mí. No quiero que hoy pase lo mismo.', conditions: [{ type: 'flagIs', flag: 's08_julian_apologized', value: true }] },
       { speaker: 'Tomás', text: 'A veces pienso en hacerme daño. Otras veces fantaseo con que los que hicieron esto sientan algo de lo que siento yo.' },
       { speaker: 'Tomás', text: 'Me asusta que se me cruce. No quiero que lo conviertas en una etiqueta.' },
       { speaker: 'Julián', text: 'Gracias por decírmelo. No voy a asumir que esos pensamientos te definen, y tampoco quiero dejarte solo con ellos.' },

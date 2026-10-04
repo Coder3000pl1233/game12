@@ -133,6 +133,9 @@ const scenes: Record<string, StoryScene> = {
   s02_open: {
     id: 's02_open', sessionId: 'S02', kind: 'dialogue', label: '“¿Qué pasa si te digo…?”', portraitState: 'uneasy',
     lines: [
+      { speaker: 'Tomás', text: 'La vez pasada dijiste que podía ir a mi ritmo. Quiero ver si era verdad.', conditions: [{ type: 'flagIs', flag: 's01_opening_pace', value: true }] },
+      { speaker: 'Tomás', text: 'Dijiste que podíamos usar la hora para cambiar algo. Primero quiero saber qué cambiarías vos.', conditions: [{ type: 'flagIs', flag: 's01_opening_change', value: true }] },
+      { speaker: 'Tomás', text: 'Me explicaste cómo trabajás. Ahora quiero una respuesta que no suene a folleto.', conditions: [{ type: 'flagIs', flag: 's01_framework_first', value: true }] },
       { speaker: 'Tomás', text: 'Si te digo que ayer me agarré a trompadas con uno de la escuela, ¿qué hacés?' },
       { speaker: 'Julián', text: '¿Querés contarme qué pasó?' },
       { speaker: 'Tomás', text: 'Todavía no. Primero quiero saber qué harías.' },
@@ -283,6 +286,8 @@ const scenes: Record<string, StoryScene> = {
       { id: 's04_listen_first', text: 'Preguntar qué necesita de Julián antes de revisar el mensaje.', intention: 'question', effects: [{ type: 'changeStat', stat: 'trust', amount: 4 }, { type: 'changeStat', stat: 'perceived_support', amount: 3 }], nextSceneId: 's04_listen_reply' },
       { id: 's04_suspect', text: 'Preguntar si él mismo pudo haber enviado el mensaje.', intention: 'confront', effects: [{ type: 'changeStat', stat: 'trust', amount: -7 }, { type: 'changeStat', stat: 'investigation_bias', amount: 8 }, { type: 'changeStat', stat: 'isolation', amount: 3 }, { type: 'setFlag', flag: 's04_accused_tomas', value: true }], nextSceneId: 's04_suspect_reply', importantDecision: true },
       { id: 's04_document', text: 'Anotar qué se sabe y qué no permite concluir el mensaje.', intention: 'limit', effects: [{ type: 'changeStat', stat: 'investigation_bias', amount: 3 }, { type: 'addClue', entry: { id: 's04_anonymous_message', title: 'Primer mensaje anónimo', text: 'El mensaje incluye un dato privado y provoca que compañeros señalen a Tomás. No está firmado y no prueba quién lo envió.', category: 'messages', sessionId: 'S04', confirmed: true } }], nextSceneId: 's04_document_reply' },
+      { id: 's04_follow_school_pressure', text: 'Explorar cómo el mensaje amplificó el hostigamiento sin buscar todavía al autor.', intention: 'deepen', conditions: [{ type: 'hypothesisActive', hypothesisId: 'school_pressure' }], effects: [{ type: 'changeStat', stat: 'perceived_support', amount: 4 }], nextSceneId: 's04_listen_reply' },
+      { id: 's04_hold_unknown_sender', text: 'Decir explícitamente que todavía no alcanza la información para atribuir el mensaje.', intention: 'limit', conditions: [{ type: 'hypothesisActive', hypothesisId: 'unknown_sender' }], effects: [{ type: 'changeStat', stat: 'trust', amount: 3 }, { type: 'setFlag', flag: 's04_attribution_deferred', value: true }], nextSceneId: 's04_document_reply' },
     ],
   },
   s04_listen_reply: {

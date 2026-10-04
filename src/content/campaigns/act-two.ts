@@ -225,6 +225,9 @@ export const actTwoScenes: Record<string, StoryScene> = {
   s08_open: {
     id: 's08_open', sessionId: 'S08', kind: 'dialogue', label: '“La prueba”', portraitState: 'defensive',
     lines: [
+      { speaker: 'Tomás', text: 'Cada vez que apareció algo, me preguntaste si había sido yo.', conditions: [{ type: 'flagIs', flag: 's04_accused_tomas', value: true }] },
+      { speaker: 'Tomás', text: 'La otra vez anotaste solo lo que acordamos. Por eso te lo voy a decir una vez.', conditions: [{ type: 'flagIs', flag: 's04_minimal_record', value: true }] },
+      { speaker: 'Tomás', text: 'Dijiste que todavía no sabíamos quién lo había mandado. Acordate de eso.', conditions: [{ type: 'flagIs', flag: 's04_attribution_deferred', value: true }] },
       { speaker: 'Tomás', text: '¿Para qué querés que te cuente algo si después se lo decís a todos?' },
       { speaker: 'Tomás', text: 'La vez de la pelea no había pasado. Te lo dije para ver qué hacías.' },
       { speaker: 'Narración', tone: 'thought', text: 'La frase de S02 cambia de sentido. Julián no puede deshacer lo que hizo ni pedirle a Tomás que confíe de inmediato.' },

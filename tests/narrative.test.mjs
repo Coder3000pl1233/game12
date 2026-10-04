@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { laSillaVaciaCampaign as campaign } from '../src/content/campaigns/la-silla-vacia.ts'
-import { applyStoryChoice, calculateSurvivalNetwork, canRedirectToExit, completeStorySession, createInitialStorySave, getStoryScene, updateHypothesis, validateStoryCampaign } from '../src/features/story/engine.ts'
+import { applyStoryChoice, calculateSurvivalNetwork, canRedirectToExit, completeStorySession, createInitialStorySave, evaluateCondition, getAvailableStoryChoices, getStoryScene, updateHypothesis, validateStoryCampaign } from '../src/features/story/engine.ts'
 
 test('cada cierre de sesión exige elegir una hipótesis y deja las notas opcionales', () => {
   const save = createInitialStorySave(campaign)
@@ -142,6 +142,28 @@ test('las sesiones rediseñadas producen réplica y segunda decisión contextual
       assert.ok(reply.choices.length >= 2, `${reply.id} debe ofrecer una segunda decisión`)
     }
   }
+})
+
+test('las hipótesis cambian preguntas disponibles sin cambiar los hechos canónicos', () => {
+  const save = createInitialStorySave(campaign)
+  save.currentSessionId = 'S04'
+  save.currentSceneId = 's04_open'
+  const opening = getStoryScene(campaign, 's04_open')
+
+  assert.equal(getAvailableStoryChoices(opening, save).some((choice) => choice.id === 's04_follow_school_pressure'), false)
+  save.hypotheses = [{ hypothesisId: 'school_pressure', status: 'active', selectedAt: new Date().toISOString() }]
+  assert.equal(getAvailableStoryChoices(opening, save).some((choice) => choice.id === 's04_follow_school_pressure'), true)
+  assert.ok(opening.lines.some((line) => /mensaje no lleva firma/i.test(line.text)))
+})
+
+test('las decisiones anteriores reaparecen como memoria explícita de Tomás', () => {
+  const save = createInitialStorySave(campaign)
+  save.flags.s01_notice_promise = true
+  save.flags.s08_julian_apologized = true
+  const visible = campaign.scenes.s16_open.lines.filter((line) => !line.conditions || line.conditions.every((condition) => evaluateCondition(condition, save)))
+  const text = visible.map((line) => line.text).join(' ')
+  assert.match(text, /me explicarías qué y por qué/i)
+  assert.match(text, /reconociste que habías hablado por mí/i)
 })
 
 function resolveFromS17(stats, flags = {}, decisionIds = []) {
