@@ -202,7 +202,7 @@ textarea::placeholder { color: #79756d; }
   .play-foot span:last-child { text-align: right; }
   .interlude-card { padding: 25px 20px; }
   .scene-text--interlude { font-size: 18px; }
-  .ending-layout { padding: 8vh 0 5vh; }
+  .ending-layout { padding: 8vh 20px 5vh; }
   .ending-copy { font-size: 16px; }
   .drawer__head { padding: 21px 20px 17px; }
   .drawer__body { padding: 0 20px 24px; }
