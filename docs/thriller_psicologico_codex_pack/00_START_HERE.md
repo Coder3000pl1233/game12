@@ -34,6 +34,14 @@ Los Actos I–III recompensan al jugador por descubrir información. El Acto IV 
 13. `14_MASTER_GAME_SPEC.md` (referencia consolidada; opcional si Codex ya leyó los anteriores)
 14. `11_CODEX_MASTER_PROMPT.md` (usar como instrucción final para Codex)
 
+## Extensión de diseño interactivo
+
+El rediseño ramificado solicitado posteriormente, que conserva esta historia y amplía agencia, emociones, consecuencias y desenlaces, comienza en:
+
+- [`../redisenio_interactivo/README.md`](../redisenio_interactivo/README.md)
+
+Es una especificación para implementación futura; no implica que esas mecánicas ya estén presentes en el motor.
+
 ## Restricciones narrativas
 - No presentar ningún diagnóstico como causa automática de violencia.
 - No convertir bullying → suicidio o bullying → violencia en una cadena causal simple.

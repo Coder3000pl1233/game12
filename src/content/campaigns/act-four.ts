@@ -1,118 +1,123 @@
-import type { StoryScene, StorySession } from '../../features/story/types'
+import type { StoryChoice, StoryScene, StorySession } from '../../features/story/types'
+
+const s17Ids = ['s17_open', 's17_meaning_reply', 's17_voice_reply', 's17_return_reply', 's17_school_alternative', 's17_case_responsibility', 's17_close', 'between_s17']
+const s18Ids = ['s18_route_resolver', 's18_exit_entry', 's18_exit_climax', 's18_crisis_entry', 's18_crisis_climax', 's18_violence_entry', 's18_violence_climax', 's18_exposure_entry', 's18_exposure_climax', 's18_administered_entry', 's18_administered_climax', 'ending_exit', 'ending_suicide_survival', 'ending_suicide_death', 'ending_school_violence', 'ending_exposure', 'ending_administered']
 
 export const actFourSessions: Record<string, StorySession> = {
-  S17: { id: 'S17', number: 17, act: 4, title: 'Volver', entrySceneId: 's17_open', sceneIds: ['s17_open', 's17_school_alternative', 's17_case_responsibility', 's17_close', 'between_s17'] },
-  S18: { id: 'S18', number: 18, act: 4, title: 'Lo que queda', entrySceneId: 's18_route_resolver', sceneIds: ['s18_route_resolver', 'ending_exit', 'ending_suicide_survival', 'ending_suicide_death', 'ending_school_violence'] },
+  S17: { id: 'S17', number: 17, act: 4, title: 'Volver', entrySceneId: 's17_open', sceneIds: s17Ids },
+  S18: { id: 'S18', number: 18, act: 4, title: 'Lo que queda', entrySceneId: 's18_route_resolver', sceneIds: s18Ids },
 }
 
 const institutionalResolution = [
-  { speaker: 'Narración', tone: 'thought' as const, text: 'Meses después, la investigación externa confirma que el relato de Camila fue manipulado, que Lagos tuvo conductas inapropiadas documentadas y que hubo cambios deliberados en registros escolares. Verónica participó en la decisión de proteger a la institución.' },
-  { speaker: 'Narración', tone: 'thought' as const, text: 'Camila declara mediante terceros. Nico entrega copias y enfrenta consecuencias por las filtraciones y amenazas. Santiago admite parte de lo que vio, pero no todo. El caso institucional avanza sin depender del destino de Tomás.' },
+  { speaker: 'Narración', tone: 'thought' as const, text: 'Meses después, la investigación externa confirma la manipulación del relato de Camila, conductas inapropiadas documentadas de Lagos y cambios deliberados en registros. Verónica participó en la protección institucional.' },
+  { speaker: 'Narración', tone: 'thought' as const, text: 'Camila declara mediante terceros. Nico entrega copias y enfrenta consecuencias por sus filtraciones y amenazas. Santiago admite una parte, pero no todo. La verdad avanza sin depender del destino de Tomás.' },
 ]
+
+function c(id: string, text: string, nextSceneId: string, intention: NonNullable<StoryChoice['intention']>, effects: StoryChoice['effects'] = []): StoryChoice {
+  return { id, text, nextSceneId, intention, effects, importantDecision: true }
+}
 
 export const actFourScenes: Record<string, StoryScene> = {
   s17_open: {
     id: 's17_open', sessionId: 'S17', kind: 'dialogue', label: '“Volver”', portraitState: 'defensive',
-    lines: [
-      { speaker: 'Narración', tone: 'thought', text: 'Tomás llega con la mochila todavía puesta. Marcelo lo espera afuera y dice que no puede escapar de cada problema. Tomás no quiere volver a la escuela.' },
-      { speaker: 'Tomás', text: 'No quiero volver. Pero si no voy, van a decir que tenían razón.' },
-      { speaker: 'Julián', text: 'Podemos pensar alternativas sin decidir hoy qué tenés que hacer.' },
-      { speaker: 'Tomás', text: 'Ya da igual. Todos terminan cansándose de mí.', conditions: [{ type: 'routeIs', route: 'suicidal_crisis' }] },
-      { speaker: 'Tomás', text: 'Pregunté quiénes van a estar mañana y a qué hora esperan que vuelva.', conditions: [{ type: 'routeIs', route: 'school_violence' }] },
-    ],
+    lines: [{ speaker: 'Narración', tone: 'thought', text: 'Tomás llega con la mochila puesta. Marcelo dice que cambiar de escuela sería escapar.' }, { speaker: 'Tomás', text: 'No quiero volver. Pero si no voy, van a decir que tenían razón.' }],
     topics: [
       { id: 's17_no_school', label: '¿Volver a esa escuela es inevitable?', sceneId: 's17_school_alternative', effects: [{ type: 'setFlag', flag: 's17_no_school_is_inevitable', value: true }, { type: 'changeStat', stat: 'school_return_pressure', amount: -5 }, { type: 'changeStat', stat: 'autonomy', amount: 3 }] },
-      { id: 's17_case_not_his', label: '¿A quién le corresponde seguir con el caso?', sceneId: 's17_case_responsibility', effects: [{ type: 'setFlag', flag: 's17_case_is_not_tomas_responsibility', value: true }, { type: 'changeStat', stat: 'perceived_support', amount: 3 }, { type: 'changeStat', stat: 'guilt', amount: -3 }] },
+      { id: 's17_case_not_his', label: '¿Quién puede continuar con el caso?', sceneId: 's17_case_responsibility', effects: [{ type: 'setFlag', flag: 's17_case_is_not_tomas_responsibility', value: true }, { type: 'changeStat', stat: 'perceived_support', amount: 3 }, { type: 'changeStat', stat: 'guilt', amount: -3 }] },
     ],
-    choices: [{ id: 's17_listen_first', text: 'Preguntar qué es lo que más le preocupa de mañana.', effects: [{ type: 'changeStat', stat: 'perceived_support', amount: 3 }], nextSceneId: 's17_close' }, { id: 's17_insist_return', text: 'Decirle que volver puede mostrar que no tiene nada que ocultar.', effects: [{ type: 'changeStat', stat: 'school_return_pressure', amount: 8 }, { type: 'changeStat', stat: 'trust', amount: -5 }, { type: 'changeStat', stat: 'hostility', amount: 4 }], nextSceneId: 's17_close', importantDecision: true }],
+    choices: [
+      c('s17_meaning_return', 'Preguntar qué significa volver para él antes de proponer una solución.', 's17_meaning_reply', 'question', [{ type: 'changeStat', stat: 'perceived_support', amount: 3 }]),
+      c('s17_restore_voice', 'Revisar qué decisiones siente que ya tomaron sin él.', 's17_voice_reply', 'apologize', [{ type: 'changeStat', stat: 'autonomy', amount: 5 }, { type: 'setFlag', flag: 's17_autonomy_reviewed', value: true }]),
+      c('s17_insist_return', 'Decirle que volver demostraría que no tiene nada que ocultar.', 's17_return_reply', 'confront', [{ type: 'changeStat', stat: 'school_return_pressure', amount: 8 }, { type: 'changeStat', stat: 'trust', amount: -5 }, { type: 'changeStat', stat: 'hostility', amount: 4 }]),
+    ],
+  },
+  s17_meaning_reply: {
+    id: 's17_meaning_reply', sessionId: 'S17', kind: 'dialogue', portraitState: 'vulnerable',
+    lines: [{ speaker: 'Tomás', text: 'Volver significa pasar por el mismo pasillo sabiendo que ahora todos conocen una versión distinta de mí.' }],
+    choices: [c('s17_meaning_day', 'Preguntar qué necesitaría para atravesar un solo día.', 's17_close', 'question', [{ type: 'changeStat', stat: 'perceived_support', amount: 3 }]), c('s17_meaning_alternative', 'Preguntar qué cambiaría si volver no fuera la única opción.', 's17_close', 'deepen', [{ type: 'setFlag', flag: 's17_no_school_is_inevitable', value: true }, { type: 'changeStat', stat: 'autonomy', amount: 3 }])],
+  },
+  s17_voice_reply: {
+    id: 's17_voice_reply', sessionId: 'S17', kind: 'dialogue', portraitState: 'uneasy',
+    lines: [{ speaker: 'Tomás', text: 'Decidieron cuándo hablar con mis viejos, qué mostrar y ahora dónde tengo que volver. A veces me preguntaron después.' }],
+    choices: [c('s17_voice_own', 'Reconocer decisiones concretas de Julián sin convertirlas en intención.', 's17_close', 'apologize', [{ type: 'changeStat', stat: 'trust', amount: 3 }]), c('s17_voice_next', 'Preguntar qué decisión inmediata debe volver a sus manos.', 's17_close', 'question', [{ type: 'changeStat', stat: 'autonomy', amount: 4 }])],
+  },
+  s17_return_reply: {
+    id: 's17_return_reply', sessionId: 'S17', kind: 'dialogue', portraitState: 'defensive',
+    lines: [{ speaker: 'Tomás', text: 'Otra vez tengo que demostrar algo para que ustedes estén tranquilos.' }],
+    choices: [c('s17_return_repair', 'Reconocer que convertiste su regreso en una prueba para otros.', 's17_close', 'apologize', [{ type: 'changeStat', stat: 'trust', amount: 3 }]), c('s17_return_double', 'Sostener que enfrentar la escuela es la forma de recuperar su lugar.', 's17_close', 'justify', [{ type: 'changeStat', stat: 'school_return_pressure', amount: 6 }, { type: 'changeStat', stat: 'trust', amount: -4 }])],
   },
   s17_school_alternative: {
     id: 's17_school_alternative', sessionId: 'S17', kind: 'dialogue', portraitState: 'uneasy',
-    lines: [{ speaker: 'Julián', text: 'No volver a esta escuela no significa que tengas que desaparecer de tu vida. Podemos averiguar qué opciones existen.' }, { speaker: 'Tomás', text: 'No sé si mamá podría hacerlo. Pero quiero saber que hay otra posibilidad.' }],
-    choices: [{ id: 's17_school_return', text: 'Volver a conversar con Tomás.', nextSceneId: 's17_open' }],
+    lines: [{ speaker: 'Julián', text: 'Volver ahí no tiene por qué ser la única opción. Podemos revisar lo que Laura averiguó y que vos decidas si te sirve.' }, { speaker: 'Tomás', text: '¿Existe de verdad o es otra cosa que van a empezar ahora?' }],
+    choices: [c('s17_school_active', 'Reconocer lo que falta y acordar que Tomás participe en cada paso.', 's17_open', 'limit', [{ type: 'setFlag', flag: 'school_alternative_active', value: true }, { type: 'changeStat', stat: 'autonomy', amount: 5 }]), c('s17_school_promise', 'Prometer el cambio antes de confirmar que la alternativa existe.', 's17_open', 'justify', [{ type: 'setFlag', flag: 's17_school_promise', value: true }, { type: 'changeStat', stat: 'trust', amount: -2 }])],
   },
   s17_case_responsibility: {
     id: 's17_case_responsibility', sessionId: 'S17', kind: 'dialogue', portraitState: 'vulnerable',
-    lines: [{ speaker: 'Julián', text: 'Lo que pasó en la escuela no es algo que tengas que resolver solo para que los adultos hagan su parte.' }, { speaker: 'Tomás', text: 'Quiero que se sepa. Pero no quiero ser el que tenga que romperse para que me crean.' }, { speaker: 'Julián', text: 'Podemos buscar una manera de que otros continúen, y vos decidir cuánto querés saber.' }],
-    choices: [{ id: 's17_case_return', text: 'Volver a conversar con Tomás.', nextSceneId: 's17_open' }],
+    lines: [{ speaker: 'Julián', text: 'La verdad no tiene que depender de que sigas pagando vos.' }, { speaker: 'Tomás', text: '¿Quién se ocupa entonces?' }],
+    choices: [c('s17_handoff_active', 'Definir un responsable externo y qué novedades quiere recibir Tomás.', 's17_open', 'limit', [{ type: 'setFlag', flag: 'case_handoff_active', value: true }, { type: 'changeStat', stat: 'perceived_support', amount: 5 }]), c('s17_handoff_total', 'Decirle que los adultos se ocuparán y que él ya no debe intervenir.', 's17_open', 'justify', [{ type: 'changeStat', stat: 'autonomy', amount: -4 }, { type: 'setFlag', flag: 's17_care_centralized', value: true }])],
   },
   s17_close: {
     id: 's17_close', sessionId: 'S17', kind: 'dialogue', label: 'Antes de volver', portraitState: 'uneasy',
-    lines: [
-      { speaker: 'Tomás', text: 'No sé qué va a pasar mañana.' },
-      { speaker: 'Julián', text: 'No hace falta que tengamos una respuesta para todo antes de cerrar hoy.' },
-      { speaker: 'Tomás', text: '¿No eras vos el que decía que tenía que enfrentar las cosas?', conditions: [{ type: 'routeIs', route: 'school_violence' }] },
-      { speaker: 'Julián', text: '¿Estás pensando en lastimarte o en lastimar a alguien?', conditions: [{ type: 'routeIs', route: 'school_violence' }] },
-      { speaker: 'Tomás', text: 'No.', conditions: [{ type: 'routeIs', route: 'school_violence' }] },
-      { speaker: 'Narración', tone: 'thought', text: 'La bronca de Tomás desaparece. “Ya sé lo que tengo que hacer”, dice, sin explicar a qué se refiere.', conditions: [{ type: 'routeIs', route: 'school_violence' }] },
-      { speaker: 'Narración', tone: 'thought', text: 'Tomás está inusualmente tranquilo y se despide con una amabilidad que no parece propia del momento.', conditions: [{ type: 'routeIs', route: 'suicidal_crisis' }] },
-      { speaker: 'Tomás', tone: 'message', text: 'Gracias por la charla del otro día. Creo que estoy un poco mejor.', conditions: [{ type: 'routeIs', route: 'suicidal_crisis' }] },
-      { speaker: 'Narración', tone: 'thought', text: 'Las alternativas están sobre la mesa, pero no borran lo acumulado. La decisión siguiente no convierte una sesión en una garantía.' },
-    ],
-    choices: [{ id: 's17_end', text: 'Cerrar la sesión y dejar que el estado acumulado marque lo que viene.', nextSceneId: 'between_s17' }],
-  },
-  between_s17: {
-    id: 'between_s17', sessionId: 'S17', kind: 'interlude', label: 'Entre sesiones',
-    lines: [
-      { speaker: 'Narración', tone: 'thought', text: 'Julián y la familia intentan comunicarse. La próxima respuesta de Tomás no depende de que alguien encuentre la frase perfecta.' },
-      { speaker: 'Narración', tone: 'thought', text: 'El mensaje llega después de una despedida inusualmente amable. Horas más tarde, Tomás deja de responder.', conditions: [{ type: 'routeIs', route: 'suicidal_crisis' }] },
-      { speaker: 'Narración', tone: 'thought', text: 'La vuelta a la escuela se acerca. Tomás habló poco del tema antes de irse.', conditions: [{ type: 'routeIs', route: 'school_violence' }] },
-      { speaker: 'Narración', tone: 'thought', text: 'Laura pregunta por opciones para que Tomás no vuelva a esa escuela; todavía no sabe qué va a elegir.', conditions: [{ type: 'routeIs', route: 'exit' }] },
-    ],
-    choices: [{ id: 's17_next', text: 'Continuar.', nextSceneId: 's18_route_resolver' }],
-  },
-  s18_route_resolver: {
-    id: 's18_route_resolver', sessionId: 'S18', kind: 'decision', label: 'Lo que queda',
-    lines: [{ speaker: 'Narración', tone: 'thought', text: 'La historia entra en su último tramo.' }],
-    choices: [{ id: 's18_resolve', text: 'Continuar.', nextSceneId: 'ending_exit' }],
-  },
-  ending_exit: {
-    id: 'ending_exit', sessionId: 'S18', kind: 'ending', label: 'Salir sin desaparecer',
-    lines: [
-      { speaker: 'Laura', text: 'Podemos averiguar cómo cambiarte de escuela. No tenés que decidir todo hoy.' },
-      { speaker: 'Tomás', text: 'Quiero entregar lo que tengo. Pero prefiero no enterarme de cada cosa, salvo que sea necesario.' },
-      { speaker: 'Narración', tone: 'thought', text: 'La investigación continúa por fuera de Tomás. Santiago lo busca una vez.' },
-      { speaker: 'Santiago', text: 'Hay cosas que no te voy a perdonar. Pero tampoco quiero seguir odiándote.' },
-      { speaker: 'Tomás', text: 'No sé qué hacer con eso. Gracias por decirlo.' },
-      { speaker: 'Julián', text: '¿Cómo fue para vos venir acá?' },
-      { speaker: 'Tomás', text: 'Al final no fue tan inútil.' },
-      { speaker: 'Narración', tone: 'thought', text: 'Tomás continúa con otra terapeuta. Entra a una escuela nueva como un estudiante más. No todo queda resuelto, pero el caso ya no depende de que él lo cargue.' },
-      ...institutionalResolution,
+    lines: [{ speaker: 'Tomás', text: 'No sé qué va a pasar mañana.' }, { speaker: 'Tomás', text: 'Confío en vos. Igual no puedo más con esto.', conditions: [{ type: 'statAtLeast', stat: 'trust', value: 60 }] }, { speaker: 'Tomás', text: 'No me digas otra vez que entendés si después van a decidir todos menos yo.', conditions: [{ type: 'statAtMost', stat: 'trust', value: 35 }] }],
+    choices: [
+      c('s17_review_promise', 'Preguntar qué promesa de Julián siente que no se sostuvo.', 'between_s17', 'apologize', [{ type: 'setFlag', flag: 's17_promises_reviewed', value: true }]),
+      c('s17_review_network', 'Revisar quién está realmente disponible fuera del consultorio.', 'between_s17', 'question', [{ type: 'setFlag', flag: 's17_network_reviewed', value: true }, { type: 'changeStat', stat: 'external_support', amount: 3 }]),
+      c('s17_centralize', 'Ofrecer encargarse de coordinar todo para que Tomás descanse.', 'between_s17', 'deepen', [{ type: 'changeStat', stat: 'autonomy', amount: -7 }, { type: 'setFlag', flag: 's17_care_centralized', value: true }]),
     ],
   },
-  ending_suicide_survival: {
-    id: 'ending_suicide_survival', sessionId: 'S18', kind: 'ending', label: 'Después de la crisis',
-    lines: [
-      { speaker: 'Narración', tone: 'thought', text: 'En los días anteriores, Tomás había empezado a ordenar asuntos pendientes y a desprenderse de algunas cosas. La calma no alcanza para saber cómo está.' },
-      { speaker: 'Narración', tone: 'thought', text: 'Tomás deja de responder a Julián y a Marcelo. Laura sigue buscándolo y conserva el hilo de contacto; Julián deja de intentar ocupar el centro de la búsqueda y ayuda a sostener a la familia.' },
-      { speaker: 'Laura', text: 'No tenés que contestarme todo. Sólo quiero que sepas que sigo acá.' },
-      { speaker: 'Narración', tone: 'thought', text: 'Tomás responde a su madre. La red de personas que habían logrado sostenerse alcanza para que lo encuentren y reciba ayuda. No hay una frase única que explique el desenlace.' },
-      { speaker: 'Narración', tone: 'thought', text: 'Semanas después, Tomás continúa con otro profesional y cambia de escuela. En una última sesión, él y Julián acuerdan que el vínculo terapéutico también puede terminar con cuidado.' },
-      ...institutionalResolution,
+  between_s17: { id: 'between_s17', sessionId: 'S17', kind: 'interlude', label: 'Entre sesiones', lines: [{ speaker: 'Narración', tone: 'thought', text: 'Las opciones de mañana dependen de recursos y vínculos construidos durante meses. Una última frase no reescribe las sesiones anteriores.' }], choices: [{ id: 's17_next', text: 'Continuar.', nextSceneId: 's18_route_resolver' }] },
+  s18_route_resolver: { id: 's18_route_resolver', sessionId: 'S18', kind: 'decision', label: 'Lo que queda', lines: [{ speaker: 'Narración', tone: 'thought', text: 'La historia entra en su último tramo.' }], choices: [{ id: 's18_resolve', text: 'Continuar.', nextSceneId: 's18_exit_entry' }] },
+
+  s18_exit_entry: {
+    id: 's18_exit_entry', sessionId: 'S18', kind: 'dialogue', label: 'Salir sin desaparecer', portraitState: 'vulnerable',
+    lines: [{ speaker: 'Laura', text: 'Hay una escuela que podemos visitar. No tenés que decidirlo sin verla.' }, { speaker: 'Tomás', text: 'Quiero entregar lo que tengo. Pero no quiero enterarme de cada cosa.' }],
+    choices: [c('s18_exit_scope', 'Acordar qué información necesita recibir y cuál puede dejar en manos de otros.', 's18_exit_climax', 'limit', [{ type: 'setFlag', flag: 's18_exit_scope_chosen', value: true }]), c('s18_exit_cost', 'Preguntar qué le cuesta sentir que irse también es una decisión propia.', 's18_exit_climax', 'question', [{ type: 'setFlag', flag: 's18_exit_cost_chosen', value: true }]), c('s18_exit_transfer', 'Proponer que otro profesional continúe mediante un traspaso elegido.', 's18_exit_climax', 'validate', [{ type: 'setFlag', flag: 's18_exit_transfer_chosen', value: true }])],
+  },
+  s18_exit_climax: {
+    id: 's18_exit_climax', sessionId: 'S18', kind: 'dialogue', portraitState: 'neutral',
+    lines: [{ speaker: 'Tomás', text: 'Quiero saber solo cuando haya algo que yo tenga que decidir.', conditions: [{ type: 'flagIs', flag: 's18_exit_scope_chosen', value: true }] }, { speaker: 'Tomás', text: 'Irme se siente como perder. Pero quedarme para demostrar algo también sería perder.', conditions: [{ type: 'flagIs', flag: 's18_exit_cost_chosen', value: true }] }, { speaker: 'Tomás', text: 'Quiero decidir qué le contás al próximo terapeuta. No quiero empezar como un expediente.', conditions: [{ type: 'flagIs', flag: 's18_exit_transfer_chosen', value: true }] }, { speaker: 'Narración', tone: 'thought', text: 'Santiago busca a Tomás antes del cambio. No se reconcilian.' }, { speaker: 'Tomás', text: 'Hay cosas que no te voy a perdonar. Pero tampoco quiero seguir odiándote.' }, { speaker: 'Tomás', text: 'Supongo que esta es la última vez que vengo acá.' }],
+    choices: [c('s18_exit_last_question', 'Preguntar qué quiere llevarse de este espacio.', 'ending_exit', 'question'), c('s18_exit_accept_transfer', 'Reconocer que cambiar de terapeuta también puede ser parte de salir.', 'ending_exit', 'limit'), c('s18_exit_silence', 'Guardar silencio y dejar que Tomás elija cómo despedirse.', 'ending_exit', 'silence')],
+  },
+  s18_crisis_entry: {
+    id: 's18_crisis_entry', sessionId: 'S18', kind: 'dialogue', label: 'El hilo de contacto', portraitState: 'vulnerable',
+    lines: [{ speaker: 'Narración', tone: 'thought', text: 'La calma de Tomás contrasta con las semanas anteriores. Después deja de responder a Julián y Marcelo. Laura conserva un hilo de contacto.' }, { speaker: 'Laura', text: 'A mí me responde, pero siento que cada cosa que digo puede alejarlo.' }],
+    choices: [c('s18_crisis_laura_voice', 'Sostener a Laura sin darle un discurso para repetir.', 's18_crisis_climax', 'validate', [{ type: 'setFlag', flag: 's18_crisis_voice', value: true }]), c('s18_crisis_shared_memory', 'Preguntar qué conversación propia seguía siendo posible entre ellos.', 's18_crisis_climax', 'question', [{ type: 'setFlag', flag: 's18_crisis_memory', value: true }]), c('s18_crisis_coordinate', 'Coordinar la red disponible mientras Laura mantiene su vínculo.', 's18_crisis_climax', 'limit', [{ type: 'setFlag', flag: 's18_crisis_network', value: true }])],
+  },
+  s18_crisis_climax: {
+    id: 's18_crisis_climax', sessionId: 'S18', kind: 'dialogue', portraitState: 'vulnerable',
+    lines: [{ speaker: 'Laura', text: 'Le voy a hablar como su mamá, no como una extensión de la consulta.', conditions: [{ type: 'flagIs', flag: 's18_crisis_voice', value: true }] }, { speaker: 'Laura', text: 'Todavía responde cuando le hablo de cosas nuestras. No del caso.', conditions: [{ type: 'flagIs', flag: 's18_crisis_memory', value: true }] }, { speaker: 'Laura', text: 'Puedo seguir en contacto si sé que no estoy sola sosteniendo todo.', conditions: [{ type: 'flagIs', flag: 's18_crisis_network', value: true }] }, { speaker: 'Narración', tone: 'thought', text: 'No hay una frase perfecta ni una conversación que otorgue control sobre el desenlace. Importa si quedó una red real, sostenida antes de hoy.' }],
+    choices: [
+      { ...c('s18_crisis_survive_transfer', 'Preparar continuidad fuera del vínculo con Julián.', 'ending_suicide_survival', 'limit'), conditions: [{ type: 'survivalNetworkAtLeast', value: 58 }] },
+      { ...c('s18_crisis_survive_account', 'Reconocer errores sin pedirle a Tomás que lo tranquilice.', 'ending_suicide_survival', 'apologize'), conditions: [{ type: 'survivalNetworkAtLeast', value: 58 }] },
+      { ...c('s18_crisis_survive_silence', 'Dejar que Tomás decida qué trasladar al próximo profesional.', 'ending_suicide_survival', 'silence'), conditions: [{ type: 'survivalNetworkAtLeast', value: 58 }] },
+      { ...c('s18_crisis_death_account', 'Asumir decisiones propias sin poner esa carga sobre Laura.', 'ending_suicide_death', 'apologize'), conditions: [{ type: 'not', condition: { type: 'survivalNetworkAtLeast', value: 58 } }] },
+      { ...c('s18_crisis_death_memory', 'Preguntar si hoy quiere hablar de Tomás o de lo ocurrido después.', 'ending_suicide_death', 'question'), conditions: [{ type: 'not', condition: { type: 'survivalNetworkAtLeast', value: 58 } }] },
+      { ...c('s18_crisis_death_silence', 'Guardar silencio sin pedirle consuelo a Laura.', 'ending_suicide_death', 'silence'), conditions: [{ type: 'not', condition: { type: 'survivalNetworkAtLeast', value: 58 } }] },
     ],
   },
-  ending_suicide_death: {
-    id: 'ending_suicide_death', sessionId: 'S18', kind: 'ending', label: 'La silla vacía',
-    lines: [
-      { speaker: 'Narración', tone: 'thought', text: 'Tomás deja de responder. Laura y Marcelo siguen intentando comunicarse. La espera se alarga; nadie encuentra una manera de hacer que conteste.' },
-      { speaker: 'Narración', tone: 'thought', text: 'El consultorio queda vacío. Tiempo después, Julián se sienta frente a la silla y repasa las veces que confundió entender el caso con sostener a la persona.' },
-      { speaker: 'Laura', text: 'A veces pienso en lo que podría haber visto. No sé si alguna respuesta habría cambiado esto.' },
-      { speaker: 'Marcelo', text: 'Yo decía que se le iba a pasar. No sé qué hacer con eso ahora.' },
-      { speaker: 'Narración', tone: 'thought', text: 'La muerte de Tomás no se explica por una sola decisión, una sola persona ni un diagnóstico. La historia no muestra el acto ni un método.' },
-      ...institutionalResolution,
-    ],
+  s18_violence_entry: {
+    id: 's18_violence_entry', sessionId: 'S18', kind: 'dialogue', label: 'La llamada', portraitState: 'defensive',
+    lines: [{ speaker: 'Narración', tone: 'thought', text: 'Laura encuentra señales preocupantes cuando Tomás ya está en la escuela. Ocurre una emergencia grave; hay personas heridas, incluidas algunas ajenas al hostigamiento. No se muestran preparativos ni ejecución.' }, { speaker: 'Tomás', tone: 'message', text: 'Cuando necesitaba que hicieras algo, no hiciste nada; cuando no quería que hicieras nada, te metiste en todo.' }],
+    choices: [c('s18_violence_account', '“Tenés razón en muchas cosas que decís sobre mí, pero esto no tiene que terminar así.”', 's18_violence_climax', 'apologize', [{ type: 'setFlag', flag: 's18_violence_account', value: true }]), c('s18_violence_listen', '“Estoy acá. No voy a defenderme de tu reproche.”', 's18_violence_climax', 'validate', [{ type: 'setFlag', flag: 's18_violence_listen', value: true }]), c('s18_violence_understand', 'Preguntar qué necesita que Julián entienda sin convertirlo en explicación.', 's18_violence_climax', 'question', [{ type: 'setFlag', flag: 's18_violence_understand', value: true }])],
   },
-  ending_school_violence: {
-    id: 'ending_school_violence', sessionId: 'S18', kind: 'ending', label: 'La llamada',
-    lines: [
-      { speaker: 'Narración', tone: 'thought', text: 'A la mañana siguiente, Laura encuentra una nota y el cuaderno de Tomás. Él ya está en la escuela. No se muestran preparativos ni detalles de lo ocurrido.' },
-      { speaker: 'Narración', tone: 'thought', text: 'La emergencia deja personas heridas, algunas vinculadas al hostigamiento y otras que no lo estaban. El incidente se narra desde sus consecuencias, no desde su ejecución.' },
-      { speaker: 'Tomás', tone: 'message', text: 'Cuando necesitaba que hicieras algo, no hiciste nada; cuando no quería que hicieras nada, te metiste en todo.' },
-      { speaker: 'Julián', text: 'Tenés razón en muchas cosas que decís sobre mí, pero esto no tiene que terminar así.' },
-      { speaker: 'Tomás', text: 'Ya es tarde.' },
-      { speaker: 'Narración', tone: 'thought', text: 'La llamada se corta. Durante la intervención externa, Tomás muere. La historia no describe tácticas ni convierte su sufrimiento en una explicación de la violencia.' },
-      { speaker: 'Narración', tone: 'thought', text: 'Las personas heridas y sus familias quedan con consecuencias irreversibles. Julián vuelve al consultorio y encuentra la silla vacía.' },
-      ...institutionalResolution,
-    ],
+  s18_violence_climax: { id: 's18_violence_climax', sessionId: 'S18', kind: 'dialogue', portraitState: 'vulnerable', lines: [{ speaker: 'Tomás', text: 'Siempre decís que no tiene que terminar así cuando ya empezó.', conditions: [{ type: 'flagIs', flag: 's18_violence_account', value: true }] }, { speaker: 'Tomás', text: 'Escuchar ahora no cambia a quién escuchaste antes.', conditions: [{ type: 'flagIs', flag: 's18_violence_listen', value: true }] }, { speaker: 'Tomás', text: 'Necesitaba que entendieras que saber la verdad no era lo mismo que ayudarme.', conditions: [{ type: 'flagIs', flag: 's18_violence_understand', value: true }] }, { speaker: 'Tomás', text: 'Ya es tarde.' }, { speaker: 'Narración', tone: 'thought', text: 'La llamada se corta. Las palabras elegidas cambian la última relación, no ofrecen una salida secreta.' }], choices: [c('s18_violence_last_account', 'No pedir perdón ni absolución durante la llamada.', 'ending_school_violence', 'apologize'), c('s18_violence_last_truth', 'Reconocer que hay otras personas afectadas sin hablar como un comunicado.', 'ending_school_violence', 'limit'), c('s18_violence_last_silence', 'No responder con una defensa.', 'ending_school_violence', 'silence')] },
+  s18_exposure_entry: {
+    id: 's18_exposure_entry', sessionId: 'S18', kind: 'dialogue', label: 'La verdad sin refugio', portraitState: 'defensive',
+    lines: [{ speaker: 'Narración', tone: 'thought', text: 'Elementos personales compartidos con alcance limitado circulan junto a la evidencia. El encubrimiento ya no puede negarse, pero la intimidad de Tomás se vuelve parte del debate.' }, { speaker: 'Tomás', text: '¿En qué momento esto dejó de ser mío?' }],
+    choices: [c('s18_exposure_own', 'Reconocer que usar su relato para probar el caso confundió verdad con permiso.', 's18_exposure_climax', 'apologize', [{ type: 'setFlag', flag: 's18_exposure_owned', value: true }]), c('s18_exposure_trace', 'Distinguir qué compartió Julián y qué se reprodujo, sin evitar la respuesta.', 's18_exposure_climax', 'question', [{ type: 'setFlag', flag: 's18_exposure_traced', value: true }]), c('s18_exposure_stop', 'Preguntar qué necesita que Julián deje de hacer ahora.', 's18_exposure_climax', 'limit', [{ type: 'setFlag', flag: 's18_exposure_stopped', value: true }])],
   },
+  s18_exposure_climax: { id: 's18_exposure_climax', sessionId: 'S18', kind: 'dialogue', portraitState: 'vulnerable', lines: [{ speaker: 'Tomás', text: 'Por lo menos no estás diciendo que fue un accidente sin dueño.', conditions: [{ type: 'flagIs', flag: 's18_exposure_owned', value: true }] }, { speaker: 'Tomás', text: 'Podemos reconstruir quién compartió qué. Lo que no podés reconstruir es quién ya lo leyó.', conditions: [{ type: 'flagIs', flag: 's18_exposure_traced', value: true }] }, { speaker: 'Tomás', text: 'Necesito que dejes de responder por mí, incluso cuando creas que me defendés.', conditions: [{ type: 'flagIs', flag: 's18_exposure_stopped', value: true }] }, { speaker: 'Tomás', text: 'Yo quería que me creyeran. No quería esto.' }], choices: [c('s18_exposure_correct', 'Corregir el alcance sin volver a repetir su intimidad.', 'ending_exposure', 'apologize'), c('s18_exposure_handoff', 'Acordar que otra persona siga el caso con límites revisados por Tomás.', 'ending_exposure', 'limit'), c('s18_exposure_quiet', 'No emitir otra respuesta pública y escuchar primero.', 'ending_exposure', 'silence')] },
+  s18_administered_entry: {
+    id: 's18_administered_entry', sessionId: 'S18', kind: 'dialogue', label: 'Una vida administrada', portraitState: 'vulnerable',
+    lines: [{ speaker: 'Narración', tone: 'thought', text: 'Hay apoyos, cambio de escuela y continuidad profesional. Casi todo está organizado antes de que Tomás entre.' }, { speaker: 'Laura', text: '¿Es esto lo que vos querías?' }, { speaker: 'Tomás', text: 'Preguntale a él.' }],
+    choices: [c('s18_admin_own', '“No debería responder por vos. También contribuí a que termináramos así.”', 's18_administered_climax', 'apologize', [{ type: 'setFlag', flag: 's18_admin_owned', value: true }]), c('s18_admin_explain', 'Explicar por qué los adultos fueron tomando esas decisiones.', 's18_administered_climax', 'justify', [{ type: 'setFlag', flag: 's18_admin_explained', value: true }]), c('s18_admin_pause', 'Detener la conversación y preguntar qué no quiere seguir aceptando.', 's18_administered_climax', 'question', [{ type: 'setFlag', flag: 's18_admin_paused', value: true }])],
+  },
+  s18_administered_climax: { id: 's18_administered_climax', sessionId: 'S18', kind: 'dialogue', portraitState: 'vulnerable', lines: [{ speaker: 'Tomás', text: 'Eso tendrías que haberlo dicho antes de responder por mí tantas veces.', conditions: [{ type: 'flagIs', flag: 's18_admin_owned', value: true }] }, { speaker: 'Tomás', text: 'Ya sé por qué lo hicieron. Saberlo no hace que lo haya elegido.', conditions: [{ type: 'flagIs', flag: 's18_admin_explained', value: true }] }, { speaker: 'Tomás', text: 'No quiero otra reunión donde me pregunten al final.', conditions: [{ type: 'flagIs', flag: 's18_admin_paused', value: true }] }, { speaker: 'Tomás', text: 'No quiero decidir para que después me convenzan.' }], choices: [c('s18_admin_transfer', 'Preparar el traspaso con Tomás decidiendo qué se comparte.', 'ending_administered', 'limit'), c('s18_admin_decentralize', 'Revisar con Marina la centralización y devolver conversaciones a la familia.', 'ending_administered', 'apologize'), c('s18_admin_silence', 'Aceptar que Tomás no quiera decir nada y no llamarlo acuerdo.', 'ending_administered', 'silence')] },
+
+  ending_exit: { id: 'ending_exit', sessionId: 'S18', kind: 'ending', label: 'Salir sin desaparecer', lines: [{ speaker: 'Tomás', text: 'Al final no fue tan inútil.' }, { speaker: 'Narración', tone: 'thought', text: 'Continúa con otro terapeuta y entra a una escuela nueva como un estudiante más. El caso ya no depende de que él lo cargue.' }, ...institutionalResolution] },
+  ending_suicide_survival: { id: 'ending_suicide_survival', sessionId: 'S18', kind: 'ending', label: 'Después de la crisis', lines: [{ speaker: 'Narración', tone: 'thought', text: 'La continuidad con Laura y la red construida permiten encontrar a Tomás y brindarle ayuda. No se muestra método ni acto, y ninguna frase explica por sí sola el desenlace.' }, { speaker: 'Narración', tone: 'thought', text: 'Semanas después continúa con otro profesional. Julián acepta dejar de ocupar el centro.' }, ...institutionalResolution] },
+  ending_suicide_death: { id: 'ending_suicide_death', sessionId: 'S18', kind: 'ending', label: 'La silla vacía', lines: [{ speaker: 'Narración', tone: 'thought', text: 'Tomás deja de responder. Tras un corte temporal se comprende que murió por suicidio. No se muestran acto, método ni cuerpo.' }, { speaker: 'Laura', text: 'Repaso todo y nunca termina.' }, { speaker: 'Narración', tone: 'thought', text: 'No existe una causa única ni una frase que hubiera garantizado otro resultado.' }, ...institutionalResolution] },
+  ending_school_violence: { id: 'ending_school_violence', sessionId: 'S18', kind: 'ending', label: 'La llamada', lines: [{ speaker: 'Narración', tone: 'thought', text: 'La intervención externa termina con la muerte de Tomás. No se describen armas, tácticas ni ejecución. Las personas heridas y sus familias quedan con consecuencias irreversibles.' }, { speaker: 'Narración', tone: 'thought', text: 'La silla vacía no justifica el daño ni lo reduce a una sola decisión.' }, ...institutionalResolution] },
+  ending_exposure: { id: 'ending_exposure', sessionId: 'S18', kind: 'ending', label: 'La verdad sin refugio', lines: [{ speaker: 'Tomás', text: 'Ahora todos saben mi historia. No sé quién me escuchó.' }, { speaker: 'Narración', tone: 'thought', text: 'Tomás rompe el vínculo con Julián y continúa con otro profesional. Lo difundido no desaparece porque el caso se haya probado.' }, { speaker: 'Narración', tone: 'thought', text: 'Julián revisa con Marina dónde confundió evidencia, finalidad y permiso.' }, ...institutionalResolution] },
+  ending_administered: { id: 'ending_administered', sessionId: 'S18', kind: 'ending', label: 'Una vida administrada', lines: [{ speaker: 'Tomás', text: 'No sé. Hace bastante que no lo elijo.' }, { speaker: 'Narración', tone: 'thought', text: 'Tomás sigue vivo, cambia de escuela y conserva apoyos, pero el vínculo con Julián termina sin haber recuperado su voz.' }, { speaker: 'Narración', tone: 'thought', text: 'Laura vuelve a preguntarle qué quiere hacer esa tarde. Esta vez deja el teléfono y espera.' }, ...institutionalResolution] },
 }

@@ -1,4 +1,5 @@
 import tomasPortrait from './characters/tomas/portrait-v2.webp'
+import julianTherapistPortrait from './characters/julian-therapist-v2.png'
 import consultationRoom from './environments/consultorio/desktop.webp'
 import consultationRoomMobile from './environments/consultorio/mobile.webp'
 import officeAmbienceOgg from './audio/ambience/consultorio.ogg'
@@ -22,6 +23,7 @@ export const portraits = {
 } as const
 
 export { tomasPortrait }
+export { julianTherapistPortrait }
 
 export const consultationRoomBackground = consultationRoom
 export const consultationRoomMobileBackground = consultationRoomMobile

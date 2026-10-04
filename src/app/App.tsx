@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { consultationRoomBackground, consultationRoomMobileBackground, tomasPortrait } from '../assets/asset-manifest'
+import { consultationRoomBackground, consultationRoomMobileBackground, julianTherapistPortrait, tomasPortrait } from '../assets/asset-manifest'
 import { useSoundscape } from '../features/settings/useSoundscape'
-import { addNotebookNote, applyStoryChoice, completeStorySession, createInitialStorySave, evaluateCondition, exploreTopic, getAvailableStoryChoices, getAvailableTopics, getStoryScene, updateHypothesis, validateStoryCampaign } from '../features/story/engine'
+import { addNotebookNote, applyStoryChoice, completeStorySession, createInitialStorySave, evaluateCondition, exploreTopic, getAvailableHypotheses, getAvailableStoryChoices, getAvailableTopics, getStoryScene, updateHypothesis, validateStoryCampaign } from '../features/story/engine'
 import { laSillaVaciaCampaign } from '../content/campaigns/la-silla-vacia'
 import { deleteStorySave, readStorySave, writeStorySave } from '../features/story/storage'
-import type { StoryCampaign, StorySave, StatBlock } from '../features/story/types'
+import type { StoryCampaign, StorySave, StoryChoice } from '../features/story/types'
 import type { Preferences } from '../features/narrative/types'
 import './story-shell.css'
 
@@ -13,7 +13,6 @@ const campaignErrors = validateStoryCampaign(campaign)
 const PREFERENCES_KEY = 'la-silla-vacia:preferences:v1'
 type Panel = 'notebook' | 'settings' | 'warning' | 'phone' | 'info' | null
 type InfoTopic = 'trust' | 'routes' | 'chapters' | 'notebook'
-type EmotionalRead = { connection: number; unease: number; tension: number }
 const defaultPreferences: Preferences = { textScale: 'normal', ambience: false, effects: false, ambientVolume: 22, effectsVolume: 36, reducedMotion: false }
 
 function readPreferences(): Preferences {
@@ -21,20 +20,6 @@ function readPreferences(): Preferences {
     const stored = localStorage.getItem(PREFERENCES_KEY)
     return stored ? { ...defaultPreferences, ...JSON.parse(stored) as Partial<Preferences> } : defaultPreferences
   } catch { return defaultPreferences }
-}
-
-function emotionalRead(stats: StatBlock): EmotionalRead {
-  return {
-    connection: stats.trust,
-    unease: (stats.isolation + stats.hopelessness) / 2,
-    tension: (stats.hostility + stats.perceived_injustice) / 2,
-  }
-}
-
-function emotionalChange(before: StatBlock, after: StatBlock): EmotionalRead {
-  const a = emotionalRead(before)
-  const b = emotionalRead(after)
-  return { connection: b.connection - a.connection, unease: b.unease - a.unease, tension: b.tension - a.tension }
 }
 
 const acts = [
@@ -64,8 +49,9 @@ export default function App() {
   const [infoTopic, setInfoTopic] = useState<InfoTopic>('trust')
   const [notice, setNotice] = useState('')
   const [noteDraft, setNoteDraft] = useState('')
+  const [mobileTopicsOpen, setMobileTopicsOpen] = useState(false)
   const [preferences, setPreferences] = useState<Preferences>(readPreferences)
-  const [recentEmotionalChange, setRecentEmotionalChange] = useState<EmotionalRead>({ connection: 0, unease: 0, tension: 0 })
+  const [dialogueStep, setDialogueStep] = useState(0)
   const scene = useMemo(() => {
     if (!save) return null
     try { return getStoryScene(campaign, save.currentSceneId) } catch { return null }
@@ -82,27 +68,45 @@ export default function App() {
     try { localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences)) } catch { /* preferencias opcionales */ }
   }, [preferences])
 
-  function persist(next: StorySave, previous?: StorySave) {
-    if (previous) setRecentEmotionalChange(emotionalChange(previous.stats, next.stats))
+  useEffect(() => {
+    setDialogueStep(save?.dialogueCursor ?? 0)
+    setMobileTopicsOpen(false)
+  }, [scene?.id])
+
+  useEffect(() => {
+    const currentSession = save ? campaign.sessions[save.currentSessionId] : undefined
+    if (screen === 'playing' && save?.phase === 'between_sessions' && currentSession && currentSession.number > 0) setPanel('notebook')
+  }, [save?.phase, save?.currentSessionId, screen])
+
+  function persist(next: StorySave, _previous?: StorySave) {
     setSave(next)
     setNotice(writeStorySave(next) ? '' : 'No se pudo guardar en este navegador. El progreso sigue abierto en esta pestaña.')
   }
   function startNewGame() {
     if (save && !window.confirm('¿Reemplazar el progreso guardado de esta historia?')) return
     const next = createInitialStorySave(campaign)
-    setRecentEmotionalChange({ connection: 0, unease: 0, tension: 0 })
     persist(next)
     setPanel(null)
     setScreen('playing')
     playEffect('door')
   }
-  function continueGame() { setScreen('playing'); setPanel(null) }
+  function continueGame() { setScreen('playing'); setPanel(save?.phase === 'between_sessions' ? 'notebook' : null) }
+  function scrollToSceneOnMobile() {
+    if (!window.matchMedia('(max-width: 760px)').matches) return
+    window.requestAnimationFrame(() => document.querySelector('.scene-stage')?.scrollIntoView({ behavior: preferences.reducedMotion ? 'auto' : 'smooth', block: 'start' }))
+  }
   function choose(choiceId: string) {
     if (!save || !scene) return
+    if (save.phase === 'between_sessions' && session?.number && !save.flags[`hypothesis_selected:${save.currentSessionId}`]) {
+      setNotice('Elegí una hipótesis en el cuaderno antes de continuar.')
+      setPanel('notebook')
+      return
+    }
     const choice = choices.find((item) => item.id === choiceId)
     if (!choice) return
     const next = applyStoryChoice(campaign, scene, choice, save)
     persist(next, save)
+    scrollToSceneOnMobile()
     if (campaign.sessions[next.currentSessionId]?.number > campaign.sessions[save.currentSessionId]?.number) playEffect('door')
     else if (/usb|file|document/i.test(choice.id)) playEffect('folder')
     else if (/message|phone|call|notification/i.test(choice.id)) playEffect('notification')
@@ -115,11 +119,49 @@ export default function App() {
     persist(next, save)
     if (topic.kind === 'document') playEffect('folder')
   }
+  function advanceDialogue() {
+    if (!save) return
+    const cursor = dialogueStep + 1
+    setDialogueStep(cursor)
+    const next = { ...save, dialogueCursor: cursor, updatedAt: new Date().toISOString() }
+    setSave(next)
+    writeStorySave(next)
+  }
   function continueSession() {
     if (!save || !nextSession) return
+    if (session?.number && !save.flags[`hypothesis_selected:${save.currentSessionId}`]) {
+      setNotice('Elegí una hipótesis en el cuaderno antes de continuar.')
+      setPanel('notebook')
+      return
+    }
     const next = completeStorySession(campaign, save, nextSession.id)
     persist(next, save)
     playEffect('door')
+  }
+  function chooseHypothesisAndContinue(hypothesisId: string, interludeChoiceId?: string) {
+    if (!save) return
+    const withOptionalNote = noteDraft.trim() ? addNotebookNote(save, noteDraft) : save
+    const reviewed = updateHypothesis(withOptionalNote, hypothesisId)
+    setNoteDraft('')
+    if (scene?.kind === 'interlude' && interludeChoiceId) {
+      const interludeChoice = getAvailableStoryChoices(scene, reviewed).find((item) => item.id === interludeChoiceId)
+      if (interludeChoice) {
+        const next = applyStoryChoice(campaign, scene, interludeChoice, reviewed)
+        persist(next, save)
+        setPanel(null)
+        playEffect('door')
+        return
+      }
+    }
+    if (nextSession) {
+      const next = completeStorySession(campaign, reviewed, nextSession.id)
+      persist(next, save)
+      setPanel(null)
+      playEffect('door')
+      return
+    }
+    persist(reviewed, save)
+    setPanel(null)
   }
   function saveNote() {
     if (!save) return
@@ -161,11 +203,14 @@ export default function App() {
     {panel === 'info' && <InfoDialog topic={infoTopic} onClose={() => setPanel(null)} />}
   </main>
 
-  const emotional = emotionalRead(save.stats)
   const actName = acts[session.act - 1]?.title ?? 'Prólogo'
   const filteredLines = scene.lines.filter((line) => !line.conditions || line.conditions.every((condition) => evaluateCondition(condition, save)))
+  const activeDialogueIndex = Math.min(dialogueStep, Math.max(0, filteredLines.length - 1))
+  const activeDialogueLine = filteredLines[activeDialogueIndex]
+  const dialogueComplete = filteredLines.length === 0 || activeDialogueIndex >= filteredLines.length - 1
   const completedSessions = Math.min(18, save.completedSessionIds.length + (save.phase === 'ending' ? 1 : 0))
   const unlockedProgress = Math.round((completedSessions / 18) * 100)
+  const hypothesisSelectedForCurrentSession = !!save.flags[`hypothesis_selected:${save.currentSessionId}`]
 
   return <main className={`story-app story-app--playing story-app--${scene.kind} ${preferences.textScale === 'large' ? 'story-app--large' : ''} ${preferences.reducedMotion ? 'story-app--reduced-motion' : ''}`} style={{ '--room-background': `url(${consultationRoomBackground})`, '--room-mobile-background': `url(${consultationRoomMobileBackground})` } as CSSProperties}>
     <header className="game-header">
@@ -179,33 +224,35 @@ export default function App() {
       <div className="game-layout">
         <section className="game-main">
           <div className="scene-stage" style={{ backgroundImage: `linear-gradient(0deg, rgba(4,10,13,.93) 0%, rgba(4,10,13,.1) 66%), url(${consultationRoomBackground})` }}>
-            {scene.kind !== 'interlude' && <div className="stage-character"><img src={tomasPortrait} alt="Tomás Ferreyra, sentado en el consultorio" /><div className="character-caption"><span>TOMÁS FERREYRA</span><small>17 AÑOS · PACIENTE</small></div></div>}
+            {scene.kind !== 'interlude' && <><div className="stage-character"><img src={tomasPortrait} alt="Tomás Ferreyra, sentado en el consultorio" /><div className="character-caption"><span>TOMÁS FERREYRA</span><small>17 AÑOS · PACIENTE</small></div></div><div className="stage-therapist"><img src={julianTherapistPortrait} alt="Julián Rivas visto de espaldas, en el rol del psicólogo" /></div></>}
             <div className="stage-note"><span>CONSULTORIO · BUENOS AIRES</span><span>{session.number ? `SESIÓN ${String(session.number).padStart(2, '0')} / 18` : 'PRÓLOGO'}</span></div>
-            <article className={`dialogue-box ${scene.kind === 'interlude' ? 'dialogue-box--interlude' : ''}`}>
+            <article className={`dialogue-box dialogue-box--speaker-${activeDialogueLine?.speaker?.toLowerCase().includes('julián') ? 'julian' : activeDialogueLine?.speaker?.toLowerCase().includes('tomás') ? 'tomas' : 'narrator'} ${scene.kind === 'interlude' ? 'dialogue-box--interlude' : ''}`}>
               {scene.kind === 'interlude' && <p className="dialogue-eyebrow">{scene.label ?? 'ENTRE SESIONES'}</p>}
-              <div className="dialogue-lines">{filteredLines.map((line, index) => <p className={`story-line story-line--${line.tone ?? 'dialogue'}`} key={`${scene.id}-${index}`}>{line.speaker && <span className="story-speaker">{line.speaker}</span>}{line.text}</p>)}</div>
+              {activeDialogueLine && <div className="dialogue-lines" key={`${scene.id}-${activeDialogueIndex}`}><p className={`story-line story-line--${activeDialogueLine.tone ?? 'dialogue'}`}>{activeDialogueLine.speaker && <span className="story-speaker">{activeDialogueLine.speaker}</span>}{activeDialogueLine.text}</p></div>}
+              {!dialogueComplete && <button className="dialogue-next" onClick={advanceDialogue}><span>Continuar</span><b>›</b></button>}
+              {dialogueComplete && choices.length > 0 && <p className="dialogue-choice-prompt">Elegí cómo responder</p>}
+              <div className="dialogue-progress" aria-label={`Diálogo ${activeDialogueIndex + 1} de ${filteredLines.length}`}>{filteredLines.map((_, index) => <span className={index <= activeDialogueIndex ? 'is-read' : ''} key={index} />)}</div>
             </article>
           </div>
-          {topics.length > 0 && <div className="mobile-topic-list"><PanelHeading title="Temas para explorar" eyebrow="ELEGÍ POR DÓNDE SEGUIR" />{topics.map((topic) => <button className="topic-row" key={topic.id} onClick={() => openTopic(topic.id)}><span className="topic-marker">{topic.kind === 'document' ? '▤' : '○'}</span><span>{topic.label}</span><b>›</b></button>)}</div>}
-          {choices.length > 0 && <div className="choice-area">
-            <PanelHeading title={scene.kind === 'interlude' ? '¿Qué hace Julián?' : 'Elegí cómo responder'} eyebrow="TU DECISIÓN" />
+          {topics.length > 0 && <div className={`mobile-topic-list ${mobileTopicsOpen ? 'is-open' : ''}`}><button className="mobile-topic-toggle" type="button" aria-expanded={mobileTopicsOpen} aria-controls="mobile-topics-content" onClick={() => setMobileTopicsOpen((open) => !open)}><span><small>ELEGÍ POR DÓNDE SEGUIR</small><strong>Temas para explorar</strong></span><span className="mobile-topic-count">{topics.length}</span><b aria-hidden="true">⌄</b></button><div className="mobile-topic-content" id="mobile-topics-content" hidden={!mobileTopicsOpen}>{topics.map((topic) => <button className="topic-row" key={topic.id} onClick={() => openTopic(topic.id)}><span className="topic-marker">{topic.kind === 'document' ? '▤' : '○'}</span><span>{topic.label}</span><b>›</b></button>)}</div></div>}
+          {choices.length > 0 && dialogueComplete && <div className="choice-area choice-area--revealed">
             {scene.kind === 'interlude'
               ? <div className="choice-grid choice-grid--single">{choices.map((choice, index) => <ChoiceButton key={choice.id} choice={choice} index={index} onClick={() => choose(choice.id)} />)}</div>
               : <div className="choice-grid">{choices.map((choice, index) => <ChoiceButton key={choice.id} choice={choice} index={index} onClick={() => choose(choice.id)} />)}</div>}
           </div>}
-          {save.phase === 'between_sessions' && choices.length === 0 && <div className="between-actions"><div><span className="story-eyebrow">CIERRE DE SESIÓN</span><p>Podés revisar tus notas antes de continuar.</p></div><button className="story-primary" onClick={continueSession}>{nextSession ? `Continuar · Sesión ${nextSession.number}` : 'Continuar'} <span>↗</span></button></div>}
+          {save.phase === 'between_sessions' && choices.length === 0 && <div className="between-actions"><div><span className="story-eyebrow">CIERRE DE SESIÓN</span><p>{hypothesisSelectedForCurrentSession ? 'Hipótesis registrada. Ya podés continuar.' : 'Elegí una hipótesis obligatoria; las notas son opcionales.'}</p></div><button className="story-primary" onClick={() => hypothesisSelectedForCurrentSession ? continueSession() : setPanel('notebook')}>{hypothesisSelectedForCurrentSession && nextSession ? `Continuar · Sesión ${nextSession.number}` : 'Abrir cuaderno'} <span>↗</span></button></div>}
         </section>
         <aside className="game-sidebar">
           <section className="sidebar-panel session-context"><PanelHeading title="Contexto de la sesión" eyebrow="EXPEDIENTE ACTIVO" action={() => openInfo('chapters')} /><p className="context-title">{session.title}</p><p className="context-copy">Julián Rivas · Tomás Ferreyra<br />Acto {session.act || 'Prólogo'} · Sesión {session.number || 'inicial'}</p><div className="context-meta"><span>PROGRESO DE HISTORIA</span><span>{unlockedProgress}%</span></div><div className="progress-track"><span style={{ width: `${unlockedProgress}%` }} /></div></section>
           <section className="sidebar-panel topic-panel"><PanelHeading title="Temas para explorar" eyebrow={topics.length && topics.every((topic) => topic.kind === 'document') ? 'ARCHIVOS DISPONIBLES' : 'A TU RITMO'} />{topics.length ? topics.map((topic) => <button className="topic-row" key={topic.id} onClick={() => openTopic(topic.id)}><span className="topic-marker">{topic.kind === 'document' ? '▤' : '○'}</span><span>{topic.label}</span><b>›</b></button>) : <p className="sidebar-empty">No hay temas abiertos en este momento. La conversación también puede quedarse en silencio.</p>}</section>
-          <EmotionalPanel values={emotional} changes={recentEmotionalChange} />
+          <section className="sidebar-panel emotional-panel"><PanelHeading title="Clima de la sesión" eyebrow="LECTURA NARRATIVA · NO CLÍNICA" /><p className="emotion-footnote">Observá silencios, postura y forma de responder. Ansiedad, miedo y enojo permanecen ocultos y no predicen por sí solos un desenlace.</p></section>
           <nav className="sidebar-actions" aria-label="Herramientas de la sesión"><button onClick={() => setPanel('notebook')} disabled={save.phase !== 'between_sessions'}><span>▤</span><span><strong>Cuaderno</strong><small>{save.phase === 'between_sessions' ? 'Notas, hipótesis y pistas' : 'Disponible entre sesiones'}</small></span><b>›</b></button><button onClick={() => setPanel('phone')}><span>☏</span><span><strong>Teléfono</strong><small>Comunicaciones archivadas</small></span><b>›</b></button><button onClick={() => setPanel('settings')}><span>⚙</span><span><strong>Opciones</strong><small>Audio, pantalla y accesibilidad</small></span><b>›</b></button></nav>
           <button className="leave-link" onClick={() => { setScreen('menu'); setPanel(null) }}>← Volver al menú sin perder el progreso</button>
         </aside>
       </div>
       <footer className="game-footer"><span>NO HAY RESPUESTAS QUE NO DEJEN HUELLA.</span><span>GUARDADO AUTOMÁTICO · {completedSessions} SESIONES COMPLETADAS</span><button onClick={restart}>Reiniciar partida</button></footer>
     </>}
-    {panel === 'notebook' && <NotebookPanel save={save} campaign={campaign} noteDraft={noteDraft} setNoteDraft={setNoteDraft} onSaveNote={saveNote} onChooseHypothesis={(id) => persist(updateHypothesis(save, id), save)} onClose={() => setPanel(null)} />}
+    {panel === 'notebook' && <NotebookPanel save={save} campaign={campaign} noteDraft={noteDraft} setNoteDraft={setNoteDraft} onSaveNote={saveNote} onChooseHypothesis={chooseHypothesisAndContinue} onClose={() => setPanel(null)} />}
     {panel === 'settings' && <SettingsDialog preferences={preferences} onChange={setPreferences} onClose={() => setPanel(null)} />}
     {panel === 'phone' && <PhonePanel save={save} onClose={() => setPanel(null)} />}
   </main>
@@ -220,14 +267,16 @@ function TrustMeter({ value }: { value: number }) {
   return <div className="trust-meter" role="img" aria-label={`Confianza ${description}`}><div className="trust-meter-icon">◉</div><div className="trust-meter-copy"><span>CONFIANZA</span><div className="trust-meter__track"><div style={{ width: `${value}%` }} /></div></div></div>
 }
 
-function ChoiceButton({ choice, index, onClick }: { choice: { id: string; text: string; importantDecision?: boolean }; index: number; onClick: () => void }) {
-  return <button className={`story-choice ${choice.importantDecision ? 'story-choice--important' : ''}`} onClick={onClick}><span className="choice-number">{String(index + 1).padStart(2, '0')}</span><span className="choice-copy"><strong>{choice.text}</strong>{choice.importantDecision && <small>Esta decisión puede afectar la relación terapéutica.</small>}</span><b>↗</b></button>
-}
-
-function EmotionalPanel({ values, changes }: { values: EmotionalRead; changes: EmotionalRead }) {
-  const readings: Array<{ key: keyof EmotionalRead; label: string }> = [{ key: 'connection', label: 'Vínculo' }, { key: 'unease', label: 'Inquietud' }, { key: 'tension', label: 'Tensión' }]
-  const band = (value: number, key: keyof EmotionalRead) => key === 'connection' ? value < 30 ? 'distante' : value < 60 ? 'en desarrollo' : 'cercano' : value < 30 ? 'baja' : value < 60 ? 'presente' : 'intensa'
-  return <section className="sidebar-panel emotional-panel"><PanelHeading title="Clima emocional" eyebrow="LECTURA NARRATIVA · NO CLÍNICA" />{readings.map(({ key, label }) => { const delta = changes[key]; return <div className="emotion-row" key={key}><div className="emotion-label"><span>{label}</span><span>{delta ? delta > 0 ? '↑ subió' : '↓ bajó' : band(values[key], key)}</span></div><div className="emotion-track" aria-hidden="true"><span className={`emotion-fill emotion-fill--${key}`} style={{ width: `${Math.max(4, Math.min(100, values[key]))}%` }} /></div></div> })}<p className="emotion-footnote">Las respuestas modifican cómo se siente la conversación; no son un diagnóstico.</p></section>
+function ChoiceButton({ choice, index, onClick }: { choice: StoryChoice; index: number; onClick: () => void }) {
+  const supportive = choice.intention === 'validate' || /pausa|escuchar|validar|reconocer|acompañar|qué necesita|dar espacio/i.test(choice.text)
+  const exploratory = choice.intention === 'question' || choice.intention === 'deepen' || /preguntar|explorar|entender|indagar/i.test(choice.text)
+  const labels: Partial<Record<NonNullable<StoryChoice['intention']>, string>> = { question: 'Preguntar', deepen: 'Profundizar', confront: 'Confrontar', validate: 'Validar', redirect: 'Redirigir', limit: 'Establecer límite', apologize: 'Reconocer', justify: 'Explicar', silence: 'Guardar silencio', avoid: 'Cambiar de tema' }
+  const approach = choice.intention ? labels[choice.intention] : supportive ? 'Validar' : exploratory ? 'Explorar' : 'Responder'
+  const tone = supportive ? 'warm' : exploratory && !choice.importantDecision ? 'mint' : 'blue'
+  return <button className={`story-choice story-choice--${tone}`} onClick={onClick}>
+    <span className="choice-number" aria-hidden="true">{index + 1}</span>
+    <span className="choice-copy"><span className="choice-text">{choice.text}</span><span className="choice-rule" aria-hidden="true" /><span className="choice-meta"><span className="choice-approach">{approach}</span></span></span>
+  </button>
 }
 
 function SettingsDialog({ preferences, onChange, onClose }: { preferences: Preferences; onChange: (value: Preferences) => void; onClose: () => void }) {
@@ -257,17 +306,51 @@ function InfoDialog({ topic, onClose }: { topic: InfoTopic; onClose: () => void 
 }
 
 function PhonePanel({ save, onClose }: { save: StorySave; onClose: () => void }) {
-  const communications = [...save.discoveredClues, ...save.observations].filter((entry) => /message|mensaje|usb|filtr|email|correo/i.test(`${entry.category ?? ''} ${entry.id} ${entry.title}`))
-  return <div className="story-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section className="story-drawer story-phone" role="dialog" aria-modal="true" aria-labelledby="phone-title"><button className="story-close" onClick={onClose} aria-label="Cerrar teléfono">×</button><p className="story-eyebrow">JULIÁN RIVAS · DISPOSITIVO</p><h2 id="phone-title">Teléfono</h2><p className="story-muted">Comunicaciones archivadas y registradas durante la historia. El teléfono no agrega información que el jugador no haya descubierto.</p><section className="notebook-section"><h3>Mensajes y filtraciones</h3>{communications.length ? communications.map((entry) => <article className="phone-entry" key={entry.id}><span>◌</span><div><strong>{entry.title}</strong><small>{entry.category ?? 'Comunicación'} · {entry.sessionId ?? 'Archivo'}</small><p>{entry.text}</p></div></article>) : <p className="story-muted">Todavía no hay comunicaciones registradas en el cuaderno.</p>}</section><button className="story-primary" onClick={onClose}>Volver a la sesión <span>↗</span></button></section></div>
+  type PhoneTab = 'messages' | 'calls' | 'alerts' | 'contacts' | 'archive'
+  const [activeTab, setActiveTab] = useState<PhoneTab>('messages')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const records = [...save.discoveredClues, ...save.observations]
+  const searchable = (entry: { id: string; title: string; category?: string }) => `${entry.category ?? ''} ${entry.id} ${entry.title}`
+  const messages = records.filter((entry) => /message|mensaje|filtr|grupo|digital|correo|email|captura|whatsapp/i.test(searchable(entry)))
+  const calls = records.filter((entry) => /call|llamad|phone|tel[eé]fono|vibraci[oó]n/i.test(searchable(entry)))
+  const alerts = records.filter((entry) => /alert|notific|amenaza/i.test(searchable(entry)))
+  const tabItems: Record<PhoneTab, typeof records> = { messages, calls, alerts, contacts: save.people, archive: records }
+  const tabs: Array<{ id: PhoneTab; label: string; icon: string }> = [
+    { id: 'messages', label: 'Mensajes', icon: '▱' },
+    { id: 'calls', label: 'Llamadas', icon: '⌕' },
+    { id: 'alerts', label: 'Alertas', icon: '◇' },
+    { id: 'contacts', label: 'Contactos', icon: '○' },
+    { id: 'archive', label: 'Archivo', icon: '▤' },
+  ]
+  const visibleEntries = tabItems[activeTab]
+  const selectedEntry = visibleEntries.find((entry) => entry.id === selectedId) ?? visibleEntries[0]
+  return <div className="story-overlay story-overlay--phone" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section className="story-drawer story-phone" role="dialog" aria-modal="true" aria-labelledby="phone-title">
+    <header className="phone-heading"><div><p className="story-eyebrow">DISPOSITIVO DE JULIÁN RIVAS</p><h2 id="phone-title">Teléfono</h2></div><button className="story-close" onClick={onClose} aria-label="Cerrar teléfono">×</button></header>
+    <div className="phone-workspace">
+      <nav className="phone-nav" aria-label="Secciones del teléfono">{tabs.map((tab) => <button className={activeTab === tab.id ? 'is-active' : ''} key={tab.id} onClick={() => { setActiveTab(tab.id); setSelectedId(null) }}><span>{tab.icon}</span><strong>{tab.label}</strong><small>{tabItems[tab.id].length}</small></button>)}<p>Solo aparecen datos y comunicaciones descubiertos en la historia.</p></nav>
+      <section className="phone-inbox"><div className="phone-inbox-heading"><span>REGISTROS</span><span>{visibleEntries.length}</span></div>{visibleEntries.length ? visibleEntries.map((entry) => <button className={`phone-list-item ${selectedEntry?.id === entry.id ? 'is-selected' : ''}`} key={entry.id} onClick={() => setSelectedId(entry.id)}><span className="phone-avatar">{activeTab === 'contacts' ? entry.title.slice(0, 1) : '◌'}</span><span className="phone-list-copy"><strong>{entry.title}</strong><small>{entry.sessionId ? `Sesión ${entry.sessionId.replace(/^S/, '')}` : entry.category ?? 'Registro'}</small><span>{entry.text}</span></span></button>) : <p className="phone-empty-list">Todavía no hay registros en esta sección.</p>}</section>
+      <section className="phone-device-wrap"><div className="phone-device"><div className="phone-device-status"><span>21:14</span><span>● ▮ ▰</span></div><div className="phone-device-contact"><span className="phone-avatar">{selectedEntry ? selectedEntry.title.slice(0, 1) : '·'}</span><span><strong>{selectedEntry?.title ?? 'Sin comunicaciones'}</strong><small>{selectedEntry ? (activeTab === 'contacts' ? 'Contacto conocido' : 'Registro archivado') : 'Bandeja de entrada'}</small></span><b>•••</b></div><div className="phone-device-thread">{selectedEntry ? <><p className="phone-thread-date">{selectedEntry.sessionId ? `EVIDENCIA · ${selectedEntry.sessionId}` : selectedEntry.category?.toUpperCase() ?? 'ARCHIVO'}</p><article className={`phone-bubble ${activeTab === 'contacts' ? 'phone-bubble--contact' : ''}`}>{selectedEntry.text}<small>{selectedEntry.category ?? 'Nota registrada'}</small></article><p className="phone-integrity-note">Vista de consulta · contenido registrado, sin mensajes añadidos</p></> : <div className="phone-empty-state"><span>☏</span><strong>{activeTab === 'contacts' ? 'Aún no hay contactos guardados' : 'No hay comunicaciones todavía'}</strong><p>Las conversaciones y pistas aparecerán acá cuando Julián las descubra durante la historia.</p></div>}</div><div className="phone-device-compose"><span>＋</span><span>Modo de consulta · solo lectura</span><b>➤</b></div></div></section>
+      <aside className="phone-details"><span className="panel-eyebrow">{selectedEntry ? (activeTab === 'contacts' ? 'CONTACTO' : 'DETALLE DEL REGISTRO') : 'ESTADO DEL ARCHIVO'}</span><h3>{selectedEntry?.title ?? 'Sin datos nuevos'}</h3><p>{selectedEntry?.category ? `Categoría: ${selectedEntry.category}` : 'El archivo todavía no contiene información en esta sección.'}</p>{selectedEntry?.sessionId && <div className="phone-detail-row"><span>ORIGEN</span><strong>Sesión {selectedEntry.sessionId.replace(/^S/, '')}</strong></div>}<div className="phone-detail-row"><span>ATRIBUCIÓN</span><strong>No confirmada</strong></div><div className="phone-disclaimer">Una pista no confirma por sí sola quién envió un mensaje ni qué ocurrió.</div></aside>
+    </div>
+  </section></div>
 }
 
-function NotebookPanel({ save, campaign: activeCampaign, noteDraft, setNoteDraft, onSaveNote, onChooseHypothesis, onClose }: { save: StorySave; campaign: StoryCampaign; noteDraft: string; setNoteDraft: (value: string) => void; onSaveNote: () => void; onChooseHypothesis: (id: string) => void; onClose: () => void }) {
-  const hypotheses = Object.values(activeCampaign.hypotheses)
-  return <div className="story-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><aside className="story-drawer story-notebook" role="dialog" aria-modal="true" aria-labelledby="notebook-title"><button className="story-close" onClick={onClose} aria-label="Cerrar cuaderno">×</button><p className="story-eyebrow">ARCHIVO DE JULIÁN · SOLO ENTRE SESIONES</p><h2 id="notebook-title">Cuaderno</h2><p className="story-muted">Pistas, contradicciones e hipótesis reunidas durante la historia.</p>
+function NotebookPanel({ save, campaign: activeCampaign, noteDraft, setNoteDraft, onSaveNote, onChooseHypothesis, onClose }: { save: StorySave; campaign: StoryCampaign; noteDraft: string; setNoteDraft: (value: string) => void; onSaveNote: () => void; onChooseHypothesis: (id: string, interludeChoiceId?: string) => void; onClose: () => void }) {
+  const hypotheses = getAvailableHypotheses(activeCampaign, save)
+  const currentHypothesis = save.flags[`hypothesis_selected:${save.currentSessionId}`] ? save.hypotheses.find((item) => item.status === 'active')?.hypothesisId ?? '' : ''
+  const [pendingHypothesis, setPendingHypothesis] = useState(currentHypothesis)
+  const interludeScene = activeCampaign.scenes[save.currentSceneId]
+  const interludeChoices = interludeScene?.kind === 'interlude' ? getAvailableStoryChoices(interludeScene, save) : []
+  const [pendingInterludeChoice, setPendingInterludeChoice] = useState(interludeChoices.length === 1 ? interludeChoices[0].id : '')
+  const canContinue = !!pendingHypothesis && (!interludeChoices.length || !!pendingInterludeChoice)
+  return <div className="story-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><aside className="story-drawer story-notebook" role="dialog" aria-modal="true" aria-labelledby="notebook-title"><button className="story-close" onClick={onClose} aria-label="Cerrar cuaderno">×</button><p className="story-eyebrow">CIERRE DE SESIÓN · ARCHIVO DE JULIÁN</p><h2 id="notebook-title">Cuaderno</h2><p className="story-muted">Antes de continuar, registrá qué hipótesis guía tu lectura de lo ocurrido.</p>
+    <section className={`notebook-checkpoint ${pendingHypothesis ? 'is-complete' : ''}`}><span className="checkpoint-number">1</span><div><strong>{pendingHypothesis ? 'Hipótesis elegida' : 'Elegí una hipótesis'}</strong><p>{pendingHypothesis ? 'Guardala para cerrar el cuaderno y comenzar la siguiente sesión.' : 'Este paso es obligatorio para avanzar.'}</p></div><span className="checkpoint-state">{pendingHypothesis ? 'LISTA PARA GUARDAR' : 'OBLIGATORIO'}</span></section>
+    <section className="notebook-section notebook-section--optional"><h3>Notas personales <small>Opcionales</small></h3><p className="story-muted">Si querés guardar una observación, hacelo antes de confirmar la hipótesis.</p><div className="notebook-note-form"><textarea value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Escribir una observación opcional…" /><button onClick={onSaveNote} disabled={!noteDraft.trim()}>Guardar nota</button></div>{save.notebookNotes.map((note, index) => <p className="notebook-note" key={`${index}-${note}`}>{note}</p>)}</section>
+    <section className="notebook-section notebook-section--priority"><h3>Hipótesis de trabajo <small>Obligatoria</small></h3>{hypotheses.map((hypothesis) => { const selected = pendingHypothesis === hypothesis.id; return <button className={`hypothesis-option ${selected ? 'is-active' : ''}`} key={hypothesis.id} onClick={() => setPendingHypothesis(hypothesis.id)}><span>{hypothesis.text}</span><small>{selected ? '✓ ELEGIDA' : 'Elegir'}</small></button> })}</section>
+    {interludeChoices.length > 1 && <section className="notebook-section notebook-section--priority"><h3>Decisión entre sesiones <small>Obligatoria</small></h3>{interludeChoices.map((item) => <button className={`hypothesis-option ${pendingInterludeChoice === item.id ? 'is-active' : ''}`} key={item.id} onClick={() => setPendingInterludeChoice(item.id)}><span>{item.text}</span><small>{pendingInterludeChoice === item.id ? '✓ ELEGIDA' : 'Elegir'}</small></button>)}</section>}
+    <div className="notebook-continue"><button className="story-primary" onClick={() => canContinue && onChooseHypothesis(pendingHypothesis, pendingInterludeChoice || undefined)} disabled={!canContinue}>{canContinue ? 'Guardar hipótesis y continuar' : 'Completá las decisiones obligatorias'} <span>↗</span></button></div>
     <div className="notebook-overview"><span><strong>{save.discoveredClues.length}</strong><small>Pistas</small></span><span><strong>{save.contradictions.length}</strong><small>Contradicciones</small></span><span><strong>{save.people.length}</strong><small>Personas</small></span></div>
     <NotebookSection title="Pistas" entries={save.discoveredClues} /><NotebookSection title="Contradicciones" entries={save.contradictions} /><NotebookSection title="Observaciones" entries={save.observations} /><NotebookSection title="Personas" entries={save.people} />
-    <section className="notebook-section"><h3>Hipótesis</h3>{hypotheses.length ? hypotheses.map((hypothesis) => { const active = save.hypotheses.some((item) => item.hypothesisId === hypothesis.id && item.status === 'active'); return <button className={`hypothesis-option ${active ? 'is-active' : ''}`} key={hypothesis.id} onClick={() => onChooseHypothesis(hypothesis.id)}>{hypothesis.text}<small>{active ? 'ACTIVA' : 'Seleccionar'}</small></button> }) : <p className="story-muted">Todavía no hay hipótesis disponibles.</p>}{save.hypotheses.filter((item) => item.status === 'crossed_out').map((item, index) => <p className="hypothesis-history" key={`${item.hypothesisId}-${index}`}><s>{activeCampaign.hypotheses[item.hypothesisId]?.text ?? item.hypothesisId}</s><span>Revisada</span></p>)}</section>
-    <section className="notebook-section"><h3>Notas personales</h3><div className="notebook-note-form"><textarea value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Registrar una hipótesis u observación…" /><button onClick={onSaveNote} disabled={!noteDraft.trim()}>Guardar nota</button></div>{save.notebookNotes.map((note, index) => <p className="notebook-note" key={`${index}-${note}`}>{note}</p>)}</section>
   </aside></div>
 }
 

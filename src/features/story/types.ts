@@ -1,6 +1,9 @@
 /** Dominio de La Silla Vacía. El contenido narrativo vive fuera de la UI. */
 export const STAT_KEYS = [
   'trust',
+  'anxiety',
+  'anger',
+  'fear',
   'isolation',
   'hopelessness',
   'hostility',
@@ -17,7 +20,7 @@ export const STAT_KEYS = [
 export type StatKey = (typeof STAT_KEYS)[number]
 export type HiddenStatKey = Exclude<StatKey, 'trust'>
 export type StatBlock = Record<StatKey, number>
-export type RouteId = 'exit' | 'suicidal_crisis' | 'school_violence'
+export type RouteId = 'exit' | 'suicidal_crisis' | 'school_violence' | 'exposure' | 'administered'
 
 export type StoryCondition =
   | { type: 'statAtLeast'; stat: StatKey; value: number }
@@ -41,6 +44,7 @@ export type StoryEffect =
   | { type: 'addContradiction'; entry: NotebookEntry }
   | { type: 'addObservation'; entry: NotebookEntry }
   | { type: 'addPerson'; entry: NotebookEntry }
+  | { type: 'addKnowledge'; actor: string; factId: string }
   | { type: 'schedule'; id: string; dueSession: number; effects: StoryEffect[] }
 
 export type NotebookEntry = {
@@ -70,6 +74,7 @@ export type StoryChoice = {
   effects?: StoryEffect[]
   nextSceneId: string
   importantDecision?: boolean
+  intention?: 'question' | 'deepen' | 'confront' | 'validate' | 'redirect' | 'limit' | 'apologize' | 'justify' | 'silence' | 'avoid'
 }
 
 export type StoryLine = {
@@ -106,6 +111,8 @@ export type HypothesisDefinition = {
   id: string
   text: string
   biasTags: string[]
+  availableFromSession?: number
+  availableUntilSession?: number
 }
 
 export type StoryCampaign = {
@@ -126,6 +133,28 @@ export type HypothesisRecord = {
   crossedOutAt?: string
 }
 
+export type PlayerStyleEvent = {
+  choiceId: string
+  sessionId: string
+  intention: NonNullable<StoryChoice['intention']>
+  at: string
+}
+
+export type PromiseRecord = {
+  id: string
+  madeAtSession: string
+  status: 'pending' | 'kept' | 'broken' | 'revised'
+  scope: string
+}
+
+export type DisclosureRecord = {
+  id: string
+  sessionId: string
+  recipient: string
+  scope: 'minimal' | 'bounded' | 'complete' | 'public'
+  discussedWithTomas: boolean
+}
+
 export type DeferredConsequence = {
   id: string
   dueSession: number
@@ -136,11 +165,13 @@ export type RoutePressure = {
   exit: number
   suicidal_crisis: number
   school_violence: number
+  exposure: number
+  administered: number
   provisional?: RouteId
 }
 
 export type StorySave = {
-  schemaVersion: 1
+  schemaVersion: 2
   campaignId: string
   phase: 'session' | 'between_sessions' | 'ending'
   currentSessionId: string
@@ -158,5 +189,13 @@ export type StorySave = {
   deferredConsequences: DeferredConsequence[]
   completedSessionIds: string[]
   routePressure?: RoutePressure
+  playerStyleEvents: PlayerStyleEvent[]
+  promises: PromiseRecord[]
+  disclosures: DisclosureRecord[]
+  supportLinks: Record<string, 'offered' | 'agreed' | 'active'>
+  knowledgeByActor: Record<string, string[]>
+  consumedConsequences: string[]
+  dialogueCursor: number
+  outcomeLocked?: RouteId | 'suicide_survival' | 'suicide_death'
   updatedAt: string
 }

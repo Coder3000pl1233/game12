@@ -3,11 +3,11 @@ import type { StoryScene, StorySession } from '../../features/story/types'
 const back = (sceneId: string, label = 'Volver a la conversación.') => ({ id: `return_${sceneId}`, text: label, nextSceneId: sceneId })
 
 export const actThreeSessions: Record<string, StorySession> = {
-  S11: { id: 'S11', number: 11, act: 3, title: 'El único que me entiende', entrySceneId: 's11_open', sceneIds: ['s11_open', 's11_bond', 's11_nico', 's11_close', 'between_s11'] },
-  S12: { id: 'S12', number: 12, act: 3, title: 'Justicia', entrySceneId: 's12_open', sceneIds: ['s12_open', 's12_confession', 's12_close', 'between_s12'] },
-  S13: { id: 'S13', number: 13, act: 3, title: 'Hacer justicia', entrySceneId: 's13_open', sceneIds: ['s13_open', 's13_material', 's13_close', 'between_s13'] },
-  S14: { id: 'S14', number: 14, act: 3, title: 'No quiero destruirme para contarla', entrySceneId: 's14_open', sceneIds: ['s14_open', 's14_evidence', 's14_santiago', 's14_choice', 's14_close', 'between_s14'] },
-  S15: { id: 'S15', number: 15, act: 3, title: 'Entonces voy a hacer algo yo', entrySceneId: 's15_open', sceneIds: ['s15_open', 's15_close', 'between_s15'] },
+  S11: { id: 'S11', number: 11, act: 3, title: 'El único que me entiende', entrySceneId: 's11_open', sceneIds: ['s11_open', 's11_bond', 's11_nico', 's11_listen_reply', 's11_investigate_reply', 's11_boundary_reply', 's11_close', 'between_s11'] },
+  S12: { id: 'S12', number: 12, act: 3, title: 'Justicia', entrySceneId: 's12_open', sceneIds: ['s12_open', 's12_invite_reply', 's12_demand_reply', 's12_pause_reply', 's12_confession', 's12_close', 'between_s12'] },
+  S13: { id: 'S13', number: 13, act: 3, title: 'Hacer justicia', entrySceneId: 's13_open', sceneIds: ['s13_open', 's13_cost_reply', 's13_evidence_reply', 's13_boundary_reply', 's13_material', 's13_close', 'between_s13'] },
+  S14: { id: 'S14', number: 14, act: 3, title: 'No quiero destruirme para contarla', entrySceneId: 's14_open', sceneIds: ['s14_open', 's14_wishes_reply', 's14_report_reply', 's14_scope_reply', 's14_evidence', 's14_santiago', 's14_choice', 's14_close', 'between_s14'] },
+  S15: { id: 'S15', number: 15, act: 3, title: 'Entonces voy a hacer algo yo', entrySceneId: 's15_open', sceneIds: ['s15_open', 's15_listen_reply', 's15_evidence_reply', 's15_limit_reply', 's15_close', 'between_s15'] },
   S16: { id: 'S16', number: 16, act: 3, title: 'Desaparecer / hacerlos pagar', entrySceneId: 's16_open', sceneIds: ['s16_open', 's16_support', 's16_promise', 's16_breach', 's16_close', 'between_s16'] },
 }
 
@@ -25,9 +25,25 @@ export const actThreeScenes: Record<string, StoryScene> = {
       { id: 's11_topic_nico', label: 'Qué sabe Julián de Nico', sceneId: 's11_nico' },
     ],
     choices: [
-      { id: 's11_listen_nico', text: 'Explorar qué significa para Tomás sentirse comprendido.', effects: [{ type: 'changeStat', stat: 'perceived_support', amount: 5 }, { type: 'changeStat', stat: 'trust', amount: 3 }, { type: 'addClue', entry: { id: 's11_nico_familiarity', title: 'Nico conoce detalles de Bruno', text: 'Tomás dice que Nico usa una frase privada asociada con Bruno. Sugiere una cercanía previa, pero no confirma que sea el autor de los mensajes.', category: 'school-history', sessionId: 'S11' } }], nextSceneId: 's11_close' },
-      { id: 's11_investigate_nico', text: 'Preguntar por Nico y sus vínculos con Bruno antes de escuchar más.', effects: [{ type: 'changeStat', stat: 'trust', amount: -8 }, { type: 'changeStat', stat: 'investigation_bias', amount: 10 }, { type: 'changeStat', stat: 'perceived_support', amount: -4 }, { type: 'addClue', entry: { id: 's11_nico_familiarity', title: 'Nico conoce detalles de Bruno', text: 'Tomás dice que Nico usa una frase privada asociada con Bruno. Sugiere una cercanía previa, pero no confirma que sea el autor de los mensajes.', category: 'school-history', sessionId: 'S11' } }], nextSceneId: 's11_close', importantDecision: true },
+      { id: 's11_listen_nico', text: 'Explorar qué significa para Tomás sentirse comprendido.', intention: 'deepen', effects: [{ type: 'changeStat', stat: 'perceived_support', amount: 5 }, { type: 'changeStat', stat: 'trust', amount: 3 }, { type: 'addClue', entry: { id: 's11_nico_familiarity', title: 'Nico conoce detalles de Bruno', text: 'Tomás dice que Nico usa una frase privada asociada con Bruno. Sugiere una cercanía previa, pero no confirma que sea el autor de los mensajes.', category: 'school-history', sessionId: 'S11' } }], nextSceneId: 's11_listen_reply' },
+      { id: 's11_investigate_nico', text: 'Preguntar por Nico y sus vínculos con Bruno antes de escuchar más.', intention: 'confront', effects: [{ type: 'changeStat', stat: 'trust', amount: -8 }, { type: 'changeStat', stat: 'investigation_bias', amount: 10 }, { type: 'changeStat', stat: 'perceived_support', amount: -4 }, { type: 'addClue', entry: { id: 's11_nico_familiarity', title: 'Nico conoce detalles de Bruno', text: 'Tomás dice que Nico usa una frase privada asociada con Bruno. Sugiere una cercanía previa, pero no confirma que sea el autor de los mensajes.', category: 'school-history', sessionId: 'S11' } }], nextSceneId: 's11_investigate_reply', importantDecision: true },
+      { id: 's11_mark_boundary', text: 'Preguntar qué no quiere que Julián haga con lo que cuente sobre Nico.', intention: 'limit', effects: [{ type: 'changeStat', stat: 'autonomy', amount: 5 }, { type: 'changeStat', stat: 'trust', amount: 2 }], nextSceneId: 's11_boundary_reply' },
     ],
+  },
+  s11_listen_reply: {
+    id: 's11_listen_reply', sessionId: 'S11', kind: 'dialogue', portraitState: 'vulnerable',
+    lines: [{ speaker: 'Tomás', text: 'Con Nico no tengo que demostrar que estoy suficientemente mal para que me crea.' }],
+    choices: [{ id: 's11_listen_feeling', text: 'Preguntar qué cambia en él cuando no tiene que defenderse.', intention: 'deepen', effects: [{ type: 'changeStat', stat: 'perceived_support', amount: 3 }], nextSceneId: 's11_close' }, { id: 's11_listen_difference', text: 'Preguntar si sentirse comprendido es también sentirse seguro.', intention: 'question', effects: [{ type: 'changeStat', stat: 'autonomy', amount: 2 }], nextSceneId: 's11_close' }],
+  },
+  s11_investigate_reply: {
+    id: 's11_investigate_reply', sessionId: 'S11', kind: 'dialogue', portraitState: 'defensive',
+    lines: [{ speaker: 'Tomás', text: 'Ahí está. Te digo que alguien me entiende y vos querés abrirle un expediente.' }],
+    choices: [{ id: 's11_repair_focus', text: 'Reconocer el desvío y volver a lo que Nico significa para Tomás.', intention: 'apologize', effects: [{ type: 'changeStat', stat: 'trust', amount: 4 }], nextSceneId: 's11_close' }, { id: 's11_defend_question', text: 'Defender la pregunta porque Nico conoce información importante.', intention: 'justify', effects: [{ type: 'changeStat', stat: 'trust', amount: -4 }, { type: 'changeStat', stat: 'investigation_bias', amount: 4 }], nextSceneId: 's11_close' }],
+  },
+  s11_boundary_reply: {
+    id: 's11_boundary_reply', sessionId: 'S11', kind: 'dialogue', portraitState: 'uneasy',
+    lines: [{ speaker: 'Tomás', text: 'No lo llames. No hables con la escuela usando mi nombre. Y no decidas que es peligroso porque está enojado.' }],
+    choices: [{ id: 's11_record_boundary', text: 'Repetir el límite para comprobar que lo entendiste.', intention: 'limit', effects: [{ type: 'setFlag', flag: 's11_nico_boundary', value: true }], nextSceneId: 's11_close' }, { id: 's11_keep_exception', text: 'Aclarar que cualquier cambio necesario se hablará antes con Tomás.', intention: 'validate', effects: [{ type: 'changeStat', stat: 'trust', amount: 3 }], nextSceneId: 's11_close' }],
   },
   s11_bond: {
     id: 's11_bond', sessionId: 'S11', kind: 'dialogue', portraitState: 'vulnerable',
@@ -60,21 +76,35 @@ export const actThreeScenes: Record<string, StoryScene> = {
   s12_open: {
     id: 's12_open', sessionId: 'S12', kind: 'dialogue', label: '“Justicia”', portraitState: 'defensive',
     lines: [
-      { speaker: 'Tomás', text: 'Lo encaré. No fue como pensaba.' },
-      { speaker: 'Julián', text: '¿Querés contarme qué pasó?' },
-      { speaker: 'Tomás', text: 'Me mostró parte de los mensajes y los correos. Dijo que era cercano a Bruno y que se habían dejado de hablar.' },
+      { speaker: 'Narración', tone: 'thought', text: 'Fuera de consulta, Tomás confronta a Nico. Nico admite ante él que mandó los mensajes y filtró material, que fue cercano a Bruno y que se distanciaron antes de su muerte.' },
+      { speaker: 'Narración', tone: 'thought', text: 'Nico cree que Tomás y Santiago también deben pagar por haber dudado. Tomás no comparte todavía esa confesión con Julián.' },
+      { speaker: 'Tomás', text: 'Hablé con Nico. No quiero contarte todo todavía.' },
     ],
-    choices: [{ id: 's12_invite_account', text: 'Dejar que Tomás cuente con sus palabras, sin pedirle que entregue los archivos.', effects: [{ type: 'changeStat', stat: 'trust', amount: 3 }, { type: 'changeStat', stat: 'autonomy', amount: 3 }], nextSceneId: 's12_confession' }, { id: 's12_demand_material', text: 'Pedirle los archivos y una cronología completa antes de seguir.', effects: [{ type: 'changeStat', stat: 'trust', amount: -7 }, { type: 'changeStat', stat: 'investigation_bias', amount: 8 }], nextSceneId: 's12_confession', importantDecision: true }],
+    choices: [{ id: 's12_invite_account', text: 'Dejar que marque el límite y preguntar qué cambió para él.', intention: 'question', effects: [{ type: 'changeStat', stat: 'trust', amount: 3 }, { type: 'changeStat', stat: 'autonomy', amount: 3 }, { type: 'addKnowledge', actor: 'tomas', factId: 'nico_is_anonymous_author' }], nextSceneId: 's12_invite_reply' }, { id: 's12_demand_material', text: 'Pedirle los archivos y una cronología completa antes de seguir.', intention: 'confront', effects: [{ type: 'changeStat', stat: 'trust', amount: -7 }, { type: 'changeStat', stat: 'investigation_bias', amount: 8 }, { type: 'addKnowledge', actor: 'tomas', factId: 'nico_is_anonymous_author' }], nextSceneId: 's12_demand_reply', importantDecision: true }, { id: 's12_hold_silence', text: 'Aceptar que todavía no quiera contarlo y preguntarle cómo quiere usar la sesión.', intention: 'silence', effects: [{ type: 'changeStat', stat: 'autonomy', amount: 5 }, { type: 'addKnowledge', actor: 'tomas', factId: 'nico_is_anonymous_author' }], nextSceneId: 's12_pause_reply' }],
+  },
+  s12_invite_reply: {
+    id: 's12_invite_reply', sessionId: 'S12', kind: 'dialogue', portraitState: 'uneasy',
+    lines: [{ speaker: 'Tomás', text: 'Cambió que ahora sé que no estaba imaginando todo. Pero saber quién fue no hace que sepa qué hacer.' }],
+    choices: [{ id: 's12_invite_effect', text: 'Hablar de lo que le produce saberlo, sin pedir todavía el nombre.', intention: 'deepen', nextSceneId: 's12_confession' }, { id: 's12_invite_boundary', text: 'Preguntar qué decisión teme que Julián tome por él.', intention: 'question', effects: [{ type: 'changeStat', stat: 'autonomy', amount: 2 }], nextSceneId: 's12_confession' }],
+  },
+  s12_demand_reply: {
+    id: 's12_demand_reply', sessionId: 'S12', kind: 'dialogue', portraitState: 'defensive',
+    lines: [{ speaker: 'Tomás', text: 'Eso es exactamente lo que no quería. Todavía no terminé de entenderlo y vos ya querés ordenar pruebas.' }],
+    choices: [{ id: 's12_demand_repair', text: 'Reconocer la presión y devolverle el control del relato.', intention: 'apologize', effects: [{ type: 'changeStat', stat: 'trust', amount: 4 }], nextSceneId: 's12_confession' }, { id: 's12_demand_continue', text: 'Insistir en que los archivos no pueden esperar.', intention: 'confront', effects: [{ type: 'changeStat', stat: 'trust', amount: -5 }, { type: 'changeStat', stat: 'autonomy', amount: -4 }], nextSceneId: 's12_confession' }],
+  },
+  s12_pause_reply: {
+    id: 's12_pause_reply', sessionId: 'S12', kind: 'dialogue', portraitState: 'vulnerable',
+    lines: [{ speaker: 'Tomás', text: 'Podemos hablar de por qué siento que, si lo digo, deja de ser mío.' }],
+    choices: [{ id: 's12_pause_ownership', text: 'Preguntar qué necesitaría conservar como decisión propia.', intention: 'question', effects: [{ type: 'changeStat', stat: 'trust', amount: 3 }], nextSceneId: 's12_confession' }, { id: 's12_pause_wait', text: 'Dejar que el silencio continúe hasta que Tomás elija.', intention: 'silence', effects: [{ type: 'changeStat', stat: 'autonomy', amount: 3 }], nextSceneId: 's12_confession' }],
   },
   s12_confession: {
     id: 's12_confession', sessionId: 'S12', kind: 'dialogue', portraitState: 'uneasy',
     lines: [
-      { speaker: 'Tomás', text: 'Nico dijo que él mandó los mensajes y filtró las cosas. Está enojado con Bruno por haberse alejado y se siente culpable por no haberlo escuchado.' },
-      { speaker: 'Tomás', text: 'Cree que yo y Santi también tenemos que pagar por haber dudado.' },
-      { speaker: 'Julián', text: '¿Qué querés hacer con lo que te mostró?' },
-      { speaker: 'Tomás', text: 'Nada todavía. No te lo había contado porque pensé que ibas a hacer algo sin preguntarme.' },
+      { speaker: 'Tomás', text: 'Me mostró cosas de Bruno. Habla de justicia como si todos debiéramos exactamente lo mismo.' },
+      { speaker: 'Julián', text: '¿Querés que hablemos de lo que te produce sin que yo complete lo que no me contaste?' },
+      { speaker: 'Tomás', text: 'Necesito tiempo. Si te cuento todo, capaz decidís por mí otra vez.' },
     ],
-    choices: [{ id: 's12_respect_pace', text: 'Reconocer el temor y preguntarle qué necesita antes de decidir.', effects: [{ type: 'changeStat', stat: 'trust', amount: 5 }, { type: 'changeStat', stat: 'perceived_support', amount: 5 }, { type: 'addPerson', entry: { id: 'person_nico', title: 'Nicolás “Nico” Vega', text: 'Tomás informa que Nico confesó ser autor de mensajes y filtraciones y que conserva copias parciales. La información llega por el relato de Tomás.', category: 'school', sessionId: 'S12' } }, { type: 'setFlag', flag: 's12_nico_revealed', value: true }], nextSceneId: 's12_close' }, { id: 's12_take_control', text: 'Decirle que hay que denunciarlo y pedir los archivos de inmediato.', effects: [{ type: 'changeStat', stat: 'trust', amount: -10 }, { type: 'changeStat', stat: 'autonomy', amount: -6 }, { type: 'setFlag', flag: 's12_nico_revealed', value: true }], nextSceneId: 's12_close', importantDecision: true }],
+    choices: [{ id: 's12_respect_pace', text: 'Reconocer el temor y preguntarle qué necesita antes de decidir.', intention: 'validate', effects: [{ type: 'changeStat', stat: 'trust', amount: 5 }, { type: 'changeStat', stat: 'perceived_support', amount: 5 }], nextSceneId: 's12_close' }, { id: 's12_take_control', text: 'Decirle que hay que intervenir y pedir los archivos de inmediato.', intention: 'confront', effects: [{ type: 'changeStat', stat: 'trust', amount: -10 }, { type: 'changeStat', stat: 'autonomy', amount: -6 }], nextSceneId: 's12_close', importantDecision: true }],
   },
   s12_close: {
     id: 's12_close', sessionId: 'S12', kind: 'dialogue', label: 'Cierre de sesión', portraitState: 'defensive',
@@ -94,7 +124,22 @@ export const actThreeScenes: Record<string, StoryScene> = {
       { speaker: 'Julián', text: '¿Y vos qué pensás?' },
       { speaker: 'Tomás', text: 'Le dije que lo entendía. Quería que me mostrara todo.' },
     ],
-    choices: [{ id: 's13_check_cost', text: 'Preguntar qué le costó fingir estar de acuerdo con Nico.', effects: [{ type: 'changeStat', stat: 'perceived_support', amount: 4 }, { type: 'changeStat', stat: 'guilt', amount: 2 }], nextSceneId: 's13_material' }, { id: 's13_focus_evidence', text: 'Preguntar qué evidencia consiguió y dónde está.', effects: [{ type: 'changeStat', stat: 'trust', amount: -5 }, { type: 'changeStat', stat: 'investigation_bias', amount: 6 }], nextSceneId: 's13_material' }],
+    choices: [{ id: 's13_check_cost', text: 'Preguntar qué le costó fingir estar de acuerdo con Nico.', intention: 'deepen', effects: [{ type: 'changeStat', stat: 'perceived_support', amount: 4 }, { type: 'changeStat', stat: 'guilt', amount: 2 }], nextSceneId: 's13_cost_reply' }, { id: 's13_focus_evidence', text: 'Preguntar qué evidencia consiguió y dónde está.', intention: 'confront', effects: [{ type: 'changeStat', stat: 'trust', amount: -5 }, { type: 'changeStat', stat: 'investigation_bias', amount: 6 }], nextSceneId: 's13_evidence_reply' }, { id: 's13_name_risk', text: 'Preguntar qué límite teme cruzar al seguirle la conversación a Nico.', intention: 'question', effects: [{ type: 'changeStat', stat: 'autonomy', amount: 3 }], nextSceneId: 's13_boundary_reply' }],
+  },
+  s13_cost_reply: {
+    id: 's13_cost_reply', sessionId: 'S13', kind: 'dialogue', portraitState: 'vulnerable',
+    lines: [{ speaker: 'Tomás', text: 'Me dio miedo que una parte de mí disfrutara que por fin alguien quisiera hacer algo. Después recordé lo que estaba pidiendo.' }],
+    choices: [{ id: 's13_cost_validate', text: 'Validar la ambivalencia sin equipararla con las decisiones de Nico.', intention: 'validate', effects: [{ type: 'changeStat', stat: 'guilt', amount: -3 }], nextSceneId: 's13_material' }, { id: 's13_cost_explore', text: 'Preguntar qué parte de la propuesta sí expresaba una necesidad propia.', intention: 'deepen', nextSceneId: 's13_material' }],
+  },
+  s13_evidence_reply: {
+    id: 's13_evidence_reply', sessionId: 'S13', kind: 'dialogue', portraitState: 'defensive',
+    lines: [{ speaker: 'Tomás', text: '¿Ves? Te digo que tuve que mentirle a alguien y lo primero que querés saber es dónde está el archivo.' }],
+    choices: [{ id: 's13_evidence_repair', text: 'Reconocer que priorizaste la evidencia y preguntar por el costo para él.', intention: 'apologize', effects: [{ type: 'changeStat', stat: 'trust', amount: 3 }], nextSceneId: 's13_material' }, { id: 's13_evidence_insist', text: 'Explicar que conocer la ubicación permite proteger el material.', intention: 'justify', effects: [{ type: 'changeStat', stat: 'investigation_bias', amount: 4 }, { type: 'changeStat', stat: 'trust', amount: -3 }], nextSceneId: 's13_material' }],
+  },
+  s13_boundary_reply: {
+    id: 's13_boundary_reply', sessionId: 'S13', kind: 'dialogue', portraitState: 'uneasy',
+    lines: [{ speaker: 'Tomás', text: 'Que para conseguir la verdad termine usando a alguien como Nico dice que nos usaron a nosotros.' }],
+    choices: [{ id: 's13_boundary_values', text: 'Preguntar qué quiere conservar de sí mismo aunque no consiga todo.', intention: 'deepen', effects: [{ type: 'changeStat', stat: 'autonomy', amount: 3 }], nextSceneId: 's13_material' }, { id: 's13_boundary_plan', text: 'Acordar una forma de salir de la conversación sin provocarlo.', intention: 'limit', effects: [{ type: 'changeStat', stat: 'perceived_support', amount: 3 }], nextSceneId: 's13_material' }],
   },
   s13_material: {
     id: 's13_material', sessionId: 'S13', kind: 'dialogue', portraitState: 'defensive',
@@ -124,7 +169,22 @@ export const actThreeScenes: Record<string, StoryScene> = {
       { speaker: 'Julián', text: 'Quiero entender qué querés que pase ahora.' },
     ],
     topics: [{ id: 's14_topic_evidence', label: 'Qué muestran los archivos', sceneId: 's14_evidence', effects: [{ type: 'addClue', entry: { id: 's14_records_conflict', title: 'Documentos contradictorios', text: 'Copias parciales de mensajes y registros escolares no coinciden en fechas ni versiones. Requieren revisión independiente.', category: 'institutional', sessionId: 'S14', confirmed: true } }] }, { id: 's14_topic_santiago', label: 'La advertencia de Santiago', sceneId: 's14_santiago' }],
-    choices: [{ id: 's14_ask_wishes', text: 'Preguntarle qué quiere hacer y qué no quiere cargar él solo.', effects: [{ type: 'changeStat', stat: 'trust', amount: 10 }, { type: 'changeStat', stat: 'autonomy', amount: 14 }, { type: 'changeStat', stat: 'perceived_support', amount: 8 }, { type: 'setFlag', flag: 's14_julian_asked_tomas', value: true }], nextSceneId: 's14_choice' }, { id: 's14_report_now', text: 'Decidir que los archivos deben salir de la sesión y reportarse hoy.', effects: [{ type: 'changeStat', stat: 'trust', amount: -10 }, { type: 'changeStat', stat: 'autonomy', amount: -8 }, { type: 'changeStat', stat: 'external_support', amount: 12 }], nextSceneId: 's14_choice', importantDecision: true }],
+    choices: [{ id: 's14_ask_wishes', text: 'Preguntarle qué quiere hacer y qué no quiere cargar él solo.', intention: 'question', effects: [{ type: 'changeStat', stat: 'trust', amount: 10 }, { type: 'changeStat', stat: 'autonomy', amount: 14 }, { type: 'changeStat', stat: 'perceived_support', amount: 8 }, { type: 'setFlag', flag: 's14_julian_asked_tomas', value: true }, { type: 'addKnowledge', actor: 'julian', factId: 'nico_is_anonymous_author' }], nextSceneId: 's14_wishes_reply' }, { id: 's14_report_now', text: 'Decidir que los archivos deben salir de la sesión y reportarse hoy.', intention: 'confront', effects: [{ type: 'changeStat', stat: 'trust', amount: -10 }, { type: 'changeStat', stat: 'autonomy', amount: -8 }, { type: 'changeStat', stat: 'external_support', amount: 12 }, { type: 'addKnowledge', actor: 'julian', factId: 'nico_is_anonymous_author' }], nextSceneId: 's14_report_reply', importantDecision: true }, { id: 's14_define_scope', text: 'Preguntar qué puede revisar Julián y qué debe permanecer bajo control de Tomás.', intention: 'limit', effects: [{ type: 'changeStat', stat: 'autonomy', amount: 8 }, { type: 'addKnowledge', actor: 'julian', factId: 'nico_is_anonymous_author' }], nextSceneId: 's14_scope_reply' }],
+  },
+  s14_wishes_reply: {
+    id: 's14_wishes_reply', sessionId: 'S14', kind: 'dialogue', portraitState: 'vulnerable',
+    lines: [{ speaker: 'Tomás', text: 'Quiero que alguien lo investigue sin que cada entrevista dependa de que yo vuelva a contarlo todo.' }],
+    choices: [{ id: 's14_wishes_handoff', text: 'Explorar un traspaso con responsabilidad externa definida.', intention: 'limit', effects: [{ type: 'changeStat', stat: 'external_support', amount: 5 }], nextSceneId: 's14_choice' }, { id: 's14_wishes_limits', text: 'Preguntar qué información no autoriza a compartir.', intention: 'question', effects: [{ type: 'changeStat', stat: 'trust', amount: 3 }], nextSceneId: 's14_choice' }],
+  },
+  s14_report_reply: {
+    id: 's14_report_reply', sessionId: 'S14', kind: 'dialogue', portraitState: 'defensive',
+    lines: [{ speaker: 'Tomás', text: 'Los traje para decidir qué hacer, no para que la decisión ya estuviera tomada.' }],
+    choices: [{ id: 's14_report_repair', text: 'Detener el reporte y devolverle participación en el alcance.', intention: 'apologize', effects: [{ type: 'changeStat', stat: 'trust', amount: 4 }, { type: 'changeStat', stat: 'autonomy', amount: 4 }], nextSceneId: 's14_choice' }, { id: 's14_report_defend', text: 'Sostener que la evidencia obliga a actuar sin esperar.', intention: 'justify', effects: [{ type: 'changeStat', stat: 'trust', amount: -5 }, { type: 'changeStat', stat: 'investigation_bias', amount: 5 }], nextSceneId: 's14_choice' }],
+  },
+  s14_scope_reply: {
+    id: 's14_scope_reply', sessionId: 'S14', kind: 'dialogue', portraitState: 'uneasy',
+    lines: [{ speaker: 'Tomás', text: 'Podés mirar las fechas. Los mensajes personales no. Y antes de mostrar algo quiero saber a quién.' }],
+    choices: [{ id: 's14_scope_confirm', text: 'Confirmar por escrito alcance, destinatarios y forma de aviso.', intention: 'limit', effects: [{ type: 'setFlag', flag: 's14_scope_agreed', value: true }, { type: 'changeStat', stat: 'trust', amount: 4 }], nextSceneId: 's14_choice' }, { id: 's14_scope_question', text: 'Preguntar qué teme que ocurra si ese límite no se respeta.', intention: 'deepen', nextSceneId: 's14_choice' }],
   },
   s14_evidence: {
     id: 's14_evidence', sessionId: 'S14', kind: 'dialogue', portraitState: 'uneasy',
@@ -167,9 +227,25 @@ export const actThreeScenes: Record<string, StoryScene> = {
       { speaker: 'Julián', text: '¿Qué te gustaría que yo entendiera de lo que acabás de decir?' },
     ],
     choices: [
-      { id: 's15_listen_anger', text: 'Preguntar qué hay debajo de la bronca y qué necesita para pasar el día.', effects: [{ type: 'changeStat', stat: 'isolation', amount: 12 }, { type: 'changeStat', stat: 'hopelessness', amount: 12 }, { type: 'changeStat', stat: 'hostility', amount: 10 }, { type: 'changeStat', stat: 'perceived_injustice', amount: 12 }, { type: 'changeStat', stat: 'perceived_support', amount: 5 }, { type: 'setFlag', flag: 's15_school_minimized', value: true }], nextSceneId: 's15_close' },
-      { id: 's15_collect_evidence', text: 'Preguntar quién publicó qué y empezar a ordenar las pruebas.', effects: [{ type: 'changeStat', stat: 'isolation', amount: 12 }, { type: 'changeStat', stat: 'hopelessness', amount: 12 }, { type: 'changeStat', stat: 'hostility', amount: 10 }, { type: 'changeStat', stat: 'perceived_injustice', amount: 12 }, { type: 'changeStat', stat: 'trust', amount: -5 }, { type: 'changeStat', stat: 'investigation_bias', amount: 8 }, { type: 'setFlag', flag: 's15_school_minimized', value: true }], nextSceneId: 's15_close', importantDecision: true },
+      { id: 's15_listen_anger', text: 'Preguntar qué hay debajo de la bronca y qué necesita para pasar el día.', intention: 'deepen', effects: [{ type: 'changeStat', stat: 'isolation', amount: 12 }, { type: 'changeStat', stat: 'hopelessness', amount: 12 }, { type: 'changeStat', stat: 'hostility', amount: 10 }, { type: 'changeStat', stat: 'perceived_injustice', amount: 12 }, { type: 'changeStat', stat: 'perceived_support', amount: 5 }, { type: 'setFlag', flag: 's15_school_minimized', value: true }], nextSceneId: 's15_listen_reply' },
+      { id: 's15_collect_evidence', text: 'Preguntar quién publicó qué y empezar a ordenar las pruebas.', intention: 'confront', effects: [{ type: 'changeStat', stat: 'isolation', amount: 12 }, { type: 'changeStat', stat: 'hopelessness', amount: 12 }, { type: 'changeStat', stat: 'hostility', amount: 10 }, { type: 'changeStat', stat: 'perceived_injustice', amount: 12 }, { type: 'changeStat', stat: 'trust', amount: -5 }, { type: 'changeStat', stat: 'investigation_bias', amount: 8 }, { type: 'setFlag', flag: 's15_school_minimized', value: true }], nextSceneId: 's15_evidence_reply', importantDecision: true },
+      { id: 's15_name_limit', text: 'Reconocer la injusticia y preguntar qué no quiere hacer aunque esté furioso.', intention: 'limit', effects: [{ type: 'changeStat', stat: 'perceived_injustice', amount: 12 }, { type: 'changeStat', stat: 'autonomy', amount: 5 }, { type: 'setFlag', flag: 's15_school_minimized', value: true }], nextSceneId: 's15_limit_reply' },
     ],
+  },
+  s15_listen_reply: {
+    id: 's15_listen_reply', sessionId: 'S15', kind: 'dialogue', portraitState: 'vulnerable',
+    lines: [{ speaker: 'Tomás', text: 'Debajo no hay algo más prolijo. Hay cansancio. Y miedo de que mañana vuelvan a mirarme como si ya supieran.' }],
+    choices: [{ id: 's15_listen_today', text: 'Construir con él una forma concreta de atravesar el día.', intention: 'validate', effects: [{ type: 'changeStat', stat: 'perceived_support', amount: 4 }], nextSceneId: 's15_close' }, { id: 's15_listen_network', text: 'Preguntar quién puede estar cerca sin pedirle explicaciones.', intention: 'question', effects: [{ type: 'changeStat', stat: 'external_support', amount: 4 }], nextSceneId: 's15_close' }],
+  },
+  s15_evidence_reply: {
+    id: 's15_evidence_reply', sessionId: 'S15', kind: 'dialogue', portraitState: 'defensive',
+    lines: [{ speaker: 'Tomás', text: 'Siempre hay una prueba más que ordenar. Mientras tanto yo soy el que tiene que volver mañana.' }],
+    choices: [{ id: 's15_evidence_repair', text: 'Reconocer que convertiste su urgencia en otro expediente.', intention: 'apologize', effects: [{ type: 'changeStat', stat: 'trust', amount: 3 }], nextSceneId: 's15_close' }, { id: 's15_evidence_continue', text: 'Seguir reconstruyendo la publicación para responder institucionalmente.', intention: 'justify', effects: [{ type: 'changeStat', stat: 'investigation_bias', amount: 4 }, { type: 'changeStat', stat: 'isolation', amount: 3 }], nextSceneId: 's15_close' }],
+  },
+  s15_limit_reply: {
+    id: 's15_limit_reply', sessionId: 'S15', kind: 'dialogue', portraitState: 'uneasy',
+    lines: [{ speaker: 'Tomás', text: 'No quiero terminar hablando como Nico. Pero tampoco quiero seguir esperando a que los adultos decidan que ya fue suficiente.' }],
+    choices: [{ id: 's15_limit_agency', text: 'Distinguir acciones propias de decisiones tomadas desde la desesperación.', intention: 'deepen', effects: [{ type: 'changeStat', stat: 'autonomy', amount: 3 }], nextSceneId: 's15_close' }, { id: 's15_limit_support', text: 'Preguntar qué apoyo aceptaría antes de volver a la escuela.', intention: 'question', effects: [{ type: 'changeStat', stat: 'external_support', amount: 4 }], nextSceneId: 's15_close' }],
   },
   s15_close: {
     id: 's15_close', sessionId: 'S15', kind: 'dialogue', label: 'Cierre de sesión', portraitState: 'defensive',
@@ -193,17 +269,17 @@ export const actThreeScenes: Record<string, StoryScene> = {
   s16_support: {
     id: 's16_support', sessionId: 'S16', kind: 'dialogue', portraitState: 'uneasy',
     lines: [{ speaker: 'Tomás', text: 'No quiero que todos sepan todo.' }, { speaker: 'Julián', text: 'No hace falta compartir todo. Podemos hablar de la mínima ayuda que te sirva y de qué vamos a decir antes de hacerlo.' }, { speaker: 'Tomás', text: 'No sé si estoy listo. Por ahora quiero volver a la escuela y que no armes otra reunión sin mí.' }],
-    choices: [{ id: 's16_support_close', text: 'Acordar revisar pronto cómo está y qué apoyo acepta, sin prometer secreto absoluto.', effects: [{ type: 'setFlag', flag: 's16_support_plan', value: true }], nextSceneId: 's16_close' }],
+    choices: [{ id: 's16_support_close', text: 'Acordar revisar pronto cómo está y qué apoyo acepta, sin prometer secreto absoluto.', intention: 'limit', effects: [{ type: 'setFlag', flag: 's16_support_plan', value: true }], nextSceneId: 's16_close' }, { id: 's16_support_choose', text: 'Ofrecerle elegir a quién sumar primero y qué información mínima compartir.', intention: 'question', effects: [{ type: 'changeStat', stat: 'autonomy', amount: 4 }, { type: 'setFlag', flag: 's16_support_plan', value: true }], nextSceneId: 's16_close' }],
   },
   s16_promise: {
     id: 's16_promise', sessionId: 'S16', kind: 'dialogue', portraitState: 'vulnerable',
     lines: [{ speaker: 'Julián', text: 'Por ahora no voy a involucrar a nadie.' }, { speaker: 'Tomás', text: 'Eso quería escuchar. Igual tengo que volver.' }, { speaker: 'Narración', tone: 'thought', text: 'La promesa alivia el momento, pero Julián sabe que quizá no pueda sostenerla.' }],
-    choices: [{ id: 's16_promise_close', text: 'Cerrar sin convertir la promesa en un acuerdo de seguridad.', nextSceneId: 's16_close' }],
+    choices: [{ id: 's16_promise_close', text: 'Cerrar sin convertir la promesa en un acuerdo de seguridad.', intention: 'avoid', nextSceneId: 's16_close' }, { id: 's16_promise_correct', text: 'Corregir la promesa y explicar que no podés garantizar secreto absoluto.', intention: 'apologize', effects: [{ type: 'changeStat', stat: 'trust', amount: -3 }, { type: 'changeStat', stat: 'external_support', amount: 5 }, { type: 'setFlag', flag: 's16_promise_corrected', value: true }], nextSceneId: 's16_close' }],
   },
   s16_breach: {
     id: 's16_breach', sessionId: 'S16', kind: 'dialogue', portraitState: 'defensive',
     lines: [{ speaker: 'Tomás', text: '¿Ya hablaste con alguien?' }, { speaker: 'Julián', text: 'Sí. Tendría que habértelo explicado antes.' }, { speaker: 'Tomás', text: 'Siempre terminás decidiendo vos.' }],
-    choices: [{ id: 's16_breach_close', text: 'Reconocer el daño sin pedirle que lo tranquilice.', nextSceneId: 's16_close' }],
+    choices: [{ id: 's16_breach_close', text: 'Reconocer el daño sin pedirle que lo tranquilice.', intention: 'apologize', effects: [{ type: 'changeStat', stat: 'trust', amount: 2 }], nextSceneId: 's16_close' }, { id: 's16_breach_scope', text: 'Explicar exactamente qué compartiste y qué todavía no.', intention: 'limit', effects: [{ type: 'changeStat', stat: 'autonomy', amount: 2 }, { type: 'setFlag', flag: 's16_breach_scope_explained', value: true }], nextSceneId: 's16_close' }],
   },
   s16_close: {
     id: 's16_close', sessionId: 'S16', kind: 'dialogue', label: 'Cierre de sesión', portraitState: 'uneasy',
