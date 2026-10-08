@@ -10,15 +10,19 @@ import './story-shell.css'
 
 const campaign: StoryCampaign = laSillaVaciaCampaign
 const campaignErrors = validateStoryCampaign(campaign)
-const PREFERENCES_KEY = 'la-silla-vacia:preferences:v1'
+const PREFERENCES_KEY = 'la-silla-vacia:preferences:v3'
 type Panel = 'notebook' | 'settings' | 'warning' | 'phone' | 'info' | null
 type InfoTopic = 'trust' | 'routes' | 'chapters' | 'notebook'
-const defaultPreferences: Preferences = { textScale: 'normal', ambience: false, effects: false, ambientVolume: 22, effectsVolume: 36, reducedMotion: false }
+const defaultPreferences: Preferences = { textScale: 'normal', ambience: true, effects: false, ambientVolume: 22, effectsVolume: 45, reducedMotion: false }
 
 function readPreferences(): Preferences {
   try {
     const stored = localStorage.getItem(PREFERENCES_KEY)
-    return stored ? { ...defaultPreferences, ...JSON.parse(stored) as Partial<Preferences> } : defaultPreferences
+    if (stored) return { ...defaultPreferences, ...JSON.parse(stored) as Partial<Preferences>, effects: false }
+    const previousAudio = localStorage.getItem('la-silla-vacia:preferences:v2')
+    if (previousAudio) return { ...defaultPreferences, ...JSON.parse(previousAudio) as Partial<Preferences>, effects: false, effectsVolume: 45 }
+    const previous = localStorage.getItem('la-silla-vacia:preferences:v1')
+    return previous ? { ...defaultPreferences, ...JSON.parse(previous) as Partial<Preferences>, ambience: true, effects: false, effectsVolume: 45 } : defaultPreferences
   } catch { return defaultPreferences }
 }
 
@@ -282,17 +286,31 @@ function ChoiceButton({ choice, index, onClick }: { choice: StoryChoice; index: 
 function SettingsDialog({ preferences, onChange, onClose }: { preferences: Preferences; onChange: (value: Preferences) => void; onClose: () => void }) {
   function update<K extends keyof Preferences>(key: K, value: Preferences[K]) { onChange({ ...preferences, [key]: value }) }
   return <div className="story-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section className="story-drawer story-settings" role="dialog" aria-modal="true" aria-labelledby="settings-title"><button className="story-close" onClick={onClose} aria-label="Cerrar configuración">×</button><p className="story-eyebrow">PREFERENCIAS</p><h2 id="settings-title">Configuración</h2>
-    <label className="setting-row"><span><strong>Ambiente sonoro</strong><small>Consultorio y pasillo. Empieza apagado.</small></span><input type="checkbox" checked={preferences.ambience} onChange={(event) => update('ambience', event.target.checked)} /></label>
+    <label className="setting-row"><span><strong>Música de ambiente</strong><small>Activa por defecto. Empieza con el primer toque; podés apagarla acá.</small></span><input type="checkbox" checked={preferences.ambience} onChange={(event) => update('ambience', event.target.checked)} /></label>
     <label className="setting-row setting-row--volume"><span><strong>Volumen del ambiente</strong><small>{preferences.ambientVolume}%</small></span><input type="range" min="0" max="100" value={preferences.ambientVolume} onChange={(event) => update('ambientVolume', Number(event.target.value))} aria-label="Volumen del ambiente" /></label>
-    <label className="setting-row"><span><strong>Efectos de sonido</strong><small>Puerta, notificaciones y expediente.</small></span><input type="checkbox" checked={preferences.effects} onChange={(event) => update('effects', event.target.checked)} /></label>
-    <label className="setting-row setting-row--volume"><span><strong>Volumen de efectos</strong><small>{preferences.effectsVolume}%</small></span><input type="range" min="0" max="100" value={preferences.effectsVolume} onChange={(event) => update('effectsVolume', Number(event.target.value))} aria-label="Volumen de efectos" /></label>
     <label className="setting-row"><span><strong>Texto grande</strong><small>Mejora la lectura de los diálogos.</small></span><input type="checkbox" checked={preferences.textScale === 'large'} onChange={(event) => update('textScale', event.target.checked ? 'large' : 'normal')} /></label>
     <label className="setting-row"><span><strong>Reducir movimiento</strong><small>Desactiva transiciones animadas.</small></span><input type="checkbox" checked={preferences.reducedMotion} onChange={(event) => update('reducedMotion', event.target.checked)} /></label>
+    <QuickGuide />
     <button className="story-primary settings-done" onClick={onClose}>Listo <span>↗</span></button></section></div>
 }
 
+function QuickGuide({ expanded = false }: { expanded?: boolean }) {
+  return <details className="quick-guide" open={expanded || undefined}>
+    <summary>Cómo jugar</summary>
+    <p>Sos Julián, el psicólogo de Tomás. Tu objetivo es escucharlo, comprender lo que pasa y decidir cómo acompañarlo.</p>
+    <ol>
+      <li>Tocá <strong>Continuar</strong> para leer cada intervención. Al terminar aparecen las respuestas.</li>
+      <li>Elegí cómo responder. Tus decisiones cambian el vínculo y pueden tener consecuencias más adelante.</li>
+      <li>Abrí <strong>Temas para explorar</strong> si querés profundizar. No hace falta agotar todos los temas.</li>
+      <li>Al terminar la sesión se abre el <strong>Cuaderno</strong>: elegí una hipótesis y, si aparece, una decisión entre sesiones. Las notas son opcionales.</li>
+      <li>Tocá <strong>Guardar hipótesis y continuar</strong> para pasar a la próxima sesión. El progreso se guarda automáticamente.</li>
+    </ol>
+    <p>Descubrir la verdad y ayudar a Tomás no siempre son lo mismo. Podés volver a esta guía desde Opciones.</p>
+  </details>
+}
+
 function ContentWarning({ onClose, onStart }: { onClose: () => void; onStart: () => void }) {
-  return <div className="story-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section className="story-drawer story-warning" role="dialog" aria-modal="true" aria-labelledby="warning-title"><button className="story-close" onClick={onClose} aria-label="Cerrar aviso">×</button><p className="story-eyebrow">ANTES DE EMPEZAR</p><h2 id="warning-title">Aviso de contenido</h2><p>Esta historia contiene referencias a bullying presencial y digital, suicidio, violencia escolar, abuso de poder y manipulación de acusaciones sexuales. Los hechos críticos se narran sin métodos ni detalles operativos.</p><p>Es una ficción interactiva, no una guía clínica. Podés salir al menú entre escenas.</p><div className="story-warning-actions"><button className="story-secondary" onClick={onClose}>Volver</button><button className="story-primary" onClick={onStart}>Continuar <span>↗</span></button></div></section></div>
+  return <div className="story-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section className="story-drawer story-warning" role="dialog" aria-modal="true" aria-labelledby="warning-title"><button className="story-close" onClick={onClose} aria-label="Cerrar aviso">×</button><p className="story-eyebrow">ANTES DE EMPEZAR</p><h2 id="warning-title">Aviso de contenido</h2><p>Esta historia contiene referencias a bullying presencial y digital, suicidio, violencia escolar, abuso de poder y manipulación de acusaciones sexuales. Los hechos críticos se narran sin métodos ni detalles operativos.</p><p>Es una ficción interactiva, no una guía clínica. Podés salir al menú entre escenas.</p><QuickGuide expanded /><div className="story-warning-actions"><button className="story-secondary" onClick={onClose}>Volver</button><button className="story-primary" onClick={onStart}>Continuar <span>↗</span></button></div></section></div>
 }
 
 function InfoDialog({ topic, onClose }: { topic: InfoTopic; onClose: () => void }) {

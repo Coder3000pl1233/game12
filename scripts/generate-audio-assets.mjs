@@ -18,11 +18,11 @@ function noiseGenerator(seed) {
   }
 }
 
-function render(duration, sample) {
+function render(duration, sample, loop = true) {
   const length = Math.round(duration * sampleRate)
   const pcm = new Float32Array(length)
   for (let index = 0; index < length; index += 1) pcm[index] = sample(index / sampleRate, index, length)
-  const blendLength = Math.min(Math.round(sampleRate * 0.24), Math.floor(length / 8))
+  const blendLength = loop ? Math.min(Math.round(sampleRate * 0.24), Math.floor(length / 8)) : 0
   for (let offset = 0; offset < blendLength; offset += 1) {
     const mix = (offset + 1) / (blendLength + 1)
     const tail = length - blendLength + offset
@@ -86,32 +86,67 @@ function hallwayAmbience() {
   })
 }
 
+// Original, seamless 48-second score: soft keys and slow minor/add9 chords.
+// Each voice wraps its decay across the loop, avoiding a silent restart.
+function ambientMusic() {
+  const duration = 48
+  const pcm = new Float32Array(sampleRate * duration)
+  const chords = [[45, 52, 59, 60], [41, 48, 55, 57], [48, 55, 62, 64], [43, 50, 57, 59]]
+  const voices = []
+  for (let bar = 0; bar < 8; bar++) {
+    const chord = chords[bar % chords.length]
+    for (const note of chord) voices.push({ note, start: bar * 6, length: 9, pad: true, gain: 0.035 })
+    for (let step = 0; step < 3; step++) {
+      voices.push({ note: chord[[1, 3, 2][step]] + 12, start: bar * 6 + step * 2, length: 8, pad: false, gain: 0.075 })
+    }
+  }
+  for (const voice of voices) {
+    const hz = 440 * 2 ** ((voice.note - 69) / 12)
+    for (let i = 0; i < voice.length * sampleRate; i++) {
+      const t = i / sampleRate
+      const envelope = voice.pad
+        ? Math.sin(Math.PI * t / voice.length) ** 2
+        : (1 - Math.exp(-t * 30)) * Math.exp(-t * 0.8) * Math.min(1, (voice.length - t) / 0.4)
+      const phase = 2 * Math.PI * hz * t
+      const tone = Math.sin(phase) + 0.18 * Math.sin(phase * 2) * Math.exp(-t) + 0.05 * Math.sin(phase * 3)
+      const index = (Math.round(voice.start * sampleRate) + i) % pcm.length
+      pcm[index] += voice.gain * envelope * tone
+      // Quiet delay tails provide space without noise or a rhythmic beat.
+      pcm[(index + Math.round(sampleRate * 0.37)) % pcm.length] += voice.gain * envelope * tone * 0.22
+      pcm[(index + Math.round(sampleRate * 0.73)) % pcm.length] += voice.gain * envelope * tone * 0.1
+    }
+  }
+  return pcm
+}
+
 function effect(name) {
   const random = noiseGenerator(name.length * 1729 + 43)
-  if (name === 'notification') return render(0.72, (time) => {
-    const envelope = Math.exp(-time * 4.4) * Math.min(1, time * 30)
-    const frequency = time < 0.22 ? 587.33 : 493.88
-    const phaseTime = time < 0.22 ? time : time - 0.22
-    return envelope * 0.13 * Math.sin(2 * Math.PI * frequency * phaseTime)
-  })
+  let filtered = 0
+  const softNoise = () => { filtered += (random() - filtered) * 0.12; return filtered }
+  const fade = (t, duration) => Math.min(1, t / 0.012, Math.max(0, (duration - t) / 0.06))
+  if (name === 'notification') return render(1.2, (time) => {
+    // Two overlapping soft bell notes; no abrupt frequency switch.
+    let value = 0
+    for (const [start, frequency] of [[0, 523.25], [0.19, 659.25]]) {
+      const t = time - start
+      if (t >= 0) value += (1 - Math.exp(-t * 90)) * Math.exp(-t * 5) * (Math.sin(2 * Math.PI * frequency * t) + 0.15 * Math.sin(2 * Math.PI * frequency * 2 * t))
+    }
+    return value * fade(time, 1.2)
+  }, false)
   if (name === 'phone-vibration') return render(0.82, (time) => {
-    const pulse = Math.pow(Math.max(0, Math.sin(2 * Math.PI * 12 * time)), 5)
-    const envelope = Math.min(1, time * 22) * Math.min(1, (0.82 - time) * 6)
-    return envelope * pulse * (0.095 * Math.sin(2 * Math.PI * 92 * time) + 0.022 * random())
-  })
-  if (name === 'folder') return render(0.48, (time) => {
-    const source = random()
-    const envelope = time < 0.29 ? Math.sin(Math.PI * time / 0.29) : Math.exp(-(time - 0.29) * 11)
-    return envelope * (0.055 * source + 0.035 * Math.sin(2 * Math.PI * 145 * time))
-  })
-  return render(1.25, (time) => {
-    const source = random()
-    const envelope = Math.sin(Math.PI * Math.min(1, time / 1.25))
-    const scrape = 0.05 * source * (time < 0.86 ? 1 : 0.45)
-    const creak = 0.04 * Math.sin(2 * Math.PI * (126 + 70 * time) * time)
-    const close = time > 1.04 ? 0.055 * Math.sin(2 * Math.PI * 74 * (time - 1.04)) * Math.exp(-(time - 1.04) * 24) : 0
-    return envelope * (scrape + creak) + close
-  })
+    const pulse = Math.sin(Math.PI * Math.min(1, Math.max(0, time < 0.32 ? time / 0.32 : (time - 0.46) / 0.32))) ** 2
+    return fade(time, 0.82) * pulse * (Math.sin(2 * Math.PI * 92 * time) + 0.08 * softNoise())
+  }, false)
+  if (name === 'folder') return render(0.65, (time) => {
+    const envelope = Math.sin(Math.PI * time / 0.65) ** 2
+    return fade(time, 0.65) * envelope * softNoise() * (0.6 + 0.4 * Math.sin(2 * Math.PI * 7 * time) ** 2)
+  }, false)
+  return render(1.35, (time) => {
+    const movement = Math.sin(Math.PI * Math.min(1, time / 1.05)) ** 2
+    const t = Math.max(0, time - 0.95)
+    const latch = time > 0.95 ? (1 - Math.exp(-t * 200)) * Math.exp(-t * 20) * (Math.sin(2 * Math.PI * 82 * t) + 0.3 * softNoise()) : 0
+    return fade(time, 1.35) * (movement * softNoise() * 0.25 + latch)
+  }, false)
 }
 
 async function encode(ffmpegPath, source, destination, codec) {
@@ -121,11 +156,24 @@ async function encode(ffmpegPath, source, destination, codec) {
   await execFileAsync(ffmpegPath, ['-hide_banner', '-loglevel', 'error', '-y', '-i', source, '-ac', '1', '-ar', '22050', ...options, destination])
 }
 
-const assets = [
+const musicOnly = process.argv.includes('--music-only')
+const effectsOnly = process.argv.includes('--effects-only')
+const assets = musicOnly || effectsOnly ? [] : [
   { file: 'src/assets/audio/ambience/consultorio', pcm: officeAmbience(), peak: 0.2 },
   { file: 'src/assets/audio/ambience/pasillo', pcm: hallwayAmbience(), peak: 0.2 },
   ...['notification', 'phone-vibration', 'folder', 'door'].map((name) => ({ file: `src/assets/audio/sfx/${name}`, pcm: effect(name), peak: 0.42 })),
 ]
+
+if (!effectsOnly) {
+  await writeWav(ambientMusic(), path.join(projectRoot, 'src/assets/audio/ambience/silla-vacia-music.wav'), 0.38)
+  console.log('Original ambient score: silla-vacia-music.wav')
+}
+if (!musicOnly) {
+  for (const name of ['notification', 'phone-vibration', 'folder', 'door']) {
+    await writeWav(effect(name), path.join(projectRoot, `src/assets/audio/sfx/${name}-v2.wav`), name === 'notification' ? 0.3 : 0.38)
+  }
+  console.log('Updated effects: four WAV assets')
+}
 
 const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'fuera-de-sesion-audio-'))
 try {

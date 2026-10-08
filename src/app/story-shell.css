@@ -202,6 +202,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
 .choice-grid--single { grid-template-columns: 1fr; }
 .story-choice { --choice-accent: #a4d5e8; display: grid; grid-template-columns: 36px minmax(0,1fr); align-items: start; gap: 16px; min-height: 150px; padding: 20px 17px 17px; text-align: left; color: #e0e7e5; border: 1px solid rgba(130,183,202,.3); border-radius: 7px; background: linear-gradient(145deg, rgba(8,23,31,.93), rgba(3,14,20,.88)); cursor: pointer; transition: border-color .18s, background .18s, box-shadow .18s; }
+.quick-guide { margin: 20px 0; padding: 16px; border: 1px solid var(--sv-line); border-radius: 8px; background: rgba(4,18,25,.7); }
+.quick-guide summary { cursor: pointer; color: var(--sv-amber); font-size: 1rem; }
+.quick-guide p, .quick-guide li { font-size: .9rem; line-height: 1.6; }
+.quick-guide ol { padding-left: 20px; }
+.quick-guide li + li { margin-top: 10px; }
 .story-choice--mint { --choice-accent: #7edfc6; }
 .story-choice--warm { --choice-accent: #e4bc7e; }
 .choice-copy { display: flex; flex-direction: column; align-self: stretch; min-width: 0; }

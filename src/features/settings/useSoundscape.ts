@@ -5,7 +5,8 @@ type Environment = 'consultorio' | 'pasillo'
 type EffectName = keyof typeof soundAssets.effects
 type SoundSettings = { ambience: boolean; effects: boolean; ambientVolume: number; effectsVolume: number }
 
-function selectAudioSource(source: { ogg: string; mp3: string }) {
+function selectAudioSource(source: { ogg: string; mp3: string } | { wav: string }) {
+  if ('wav' in source) return source.wav
   const probe = new Audio()
   if (probe.canPlayType('audio/ogg; codecs="vorbis"')) return source.ogg
   return source.mp3
@@ -21,7 +22,7 @@ class Soundscape {
   private timers = new Set<number>()
 
   configure(settings: SoundSettings, environment: Environment) {
-    this.effectsEnabled = settings.effects
+    this.effectsEnabled = false
     this.effectsVolume = Math.max(0, Math.min(1, settings.effectsVolume / 100))
     if (!settings.ambience || settings.ambientVolume <= 0) {
       this.stopAmbient()
@@ -105,6 +106,14 @@ export function useSoundscape(settings: SoundSettings, environment: Environment)
 
   useEffect(() => {
     engine.configure(settings, environment)
+    // Retry after a user gesture when the browser blocked saved audio preferences.
+    const unlock = () => engine.configure(settings, environment)
+    window.addEventListener('pointerdown', unlock)
+    window.addEventListener('keydown', unlock)
+    return () => {
+      window.removeEventListener('pointerdown', unlock)
+      window.removeEventListener('keydown', unlock)
+    }
   }, [engine, settings.ambience, settings.effects, settings.ambientVolume, settings.effectsVolume, environment])
 
   useEffect(() => () => engine.dispose(), [engine])
